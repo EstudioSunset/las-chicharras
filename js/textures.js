@@ -180,6 +180,18 @@ export function adobe() {
   return tex(c);
 }
 
+// Pretil decorativo: tablero azul claro con un rombo blanco (1 tablero = 1.8 m)
+export function rombos() {
+  const [c, x] = lienzo(256, 128);
+  x.fillStyle = '#a9d2db'; x.fillRect(0, 0, 256, 128);
+  x.fillStyle = '#f6f7f4'; x.strokeStyle = '#7f9aa3'; x.lineWidth = 3;
+  x.beginPath(); x.moveTo(6, 64); x.lineTo(128, 14); x.lineTo(250, 64); x.lineTo(128, 114); x.closePath(); x.fill(); x.stroke();
+  x.fillStyle = '#a9d2db'; x.beginPath(); x.arc(128, 64, 10, 0, 7); x.fill();
+  x.strokeStyle = '#8d8a80'; x.lineWidth = 8; x.strokeRect(0, 0, 256, 128);
+  ruido(x, 256, 128, 300, ['#c7b48a', '#8fb3bd'], [2, 6], 0.25, 81);
+  return tex(c);
+}
+
 export function cancha() {
   const [c, x] = lienzo(256, 512);
   x.fillStyle = '#8f9a8a'; x.fillRect(0, 0, 256, 512);

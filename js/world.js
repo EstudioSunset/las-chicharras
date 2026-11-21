@@ -532,6 +532,58 @@ export function construirPueblo(scene, renderer) {
     L.lisos.push(new THREE.CylinderGeometry(0.62, 0.62, 0.03, 16), new THREE.Color('#bdb8ae'), M(-50.5, 0.025, 52.3));
   }
 
+  // -------------------------------------------------------------- CRUCE CALLE CENTRAL × CALLE PRINCIPAL (lado norte)
+  // Reconstruido con Street View (c. 2015) tomada desde la esquina de los ficus mirando al norte por la calle central.
+  {
+    const box = (w, h, d, col, x, y, z) => L.lisos.push(new THREE.BoxGeometry(w, h, d), new THREE.Color(col), M(x, y, z));
+    // --- Esquina noroeste: construcción larga azul claro, rodapié oscuro y pretil con rombos blancos
+    {
+      const x0 = -66, x1 = -55, z0 = -72, z1 = -55, H = 3.0;
+      const cx = (x0 + x1) / 2, cz = (z0 + z1) / 2, W = x1 - x0, D = z1 - z0;
+      box(W, H, D, '#a6cfd8', cx, H / 2, cz);
+      box(W + 0.06, 0.95, D + 0.06, '#6f6b5c', cx, 0.475, cz);
+      box(W + 0.24, 0.2, D + 0.24, '#9a978f', cx, H + 0.1, cz);
+      for (const [x, z] of [[x1, z1], [x0, z1], [x1, z0], [x1, -63.5]]) box(0.45, H + 0.05, 0.45, '#8d8a80', x, H / 2, z);
+      // puertas y ventanas hacia la calle central
+      for (const [z, tipo] of [[-58, 'p'], [-61, 'v'], [-66, 'p'], [-69, 'v']]) {
+        if (tipo === 'p') { box(0.06, 2.1, 0.95, '#3c3a36', x1 + 0.03, 1.05, z); box(0.07, 2.2, 0.08, '#8d8a80', x1 + 0.04, 1.1, z - 0.5); }
+        else box(0.06, 0.6, 0.5, '#2a3236', x1 + 0.03, 1.55, z);
+      }
+      box(0.06, 0.3, 0.25, '#4a4a46', cx + 1.5, 1.8, z1 + 0.03); // medidor
+      // pretil con rombos (sur y oriente)
+      const pret = (len, x, z, rot) => {
+        const t = TX.rombos(); t.repeat.set(len / 1.8, 1);
+        const m = new THREE.Mesh(new THREE.PlaneGeometry(len, 0.8), new THREE.MeshLambertMaterial({ map: t, side: THREE.DoubleSide }));
+        m.position.set(x, H + 0.6, z); m.rotation.y = rot; scene.add(m);
+      };
+      pret(7.2, -58.8, z1, 0); pret(8.6, x1, -59.5, PI / 2);
+      for (let x = -62.4; x <= -55; x += 1.8) box(0.18, 0.85, 0.18, '#8d8a80', x, H + 0.6, z1);
+      for (let z = -55; z >= -63.8; z -= 1.8) box(0.18, 0.85, 0.18, '#8d8a80', x1, H + 0.6, z);
+      box(7.4, 0.1, 0.22, '#8d8a80', -58.8, H + 1.02, z1); box(0.22, 0.1, 8.8, '#8d8a80', x1, H + 1.02, -59.5);
+      const rc = obb(cx, cz, W, D, 0); solido(rc); mapa.edificios.push({ pts: esquinas(rc), color: '#9a978f' });
+    }
+    // --- Esquina noreste: construcción larga blanca con pilastras y rodapié grises; tienda en la esquina
+    {
+      const x0 = -45.3, x1 = -20, z0 = -64, z1 = -55.2, H = 3.2;
+      const cx = (x0 + x1) / 2, cz = (z0 + z1) / 2, W = x1 - x0, D = z1 - z0;
+      box(W, H, D, '#f0efea', cx, H / 2, cz);
+      box(W + 0.06, 1.0, D + 0.06, '#86847d', cx, 0.5, cz);
+      box(W + 0.06, 0.18, D + 0.06, '#86847d', cx, 2.6, cz);
+      box(W + 0.36, 0.22, D + 0.36, '#a3a09a', cx, H + 0.11, cz);
+      for (const x of [x0, -40.3, -35, -29.7, -24.6, x1]) box(0.42, H, 0.14, '#86847d', x, H / 2, z1 + 0.07);
+      for (const z of [-59.6, z0]) box(0.14, H, 0.42, '#86847d', x0 - 0.07, H / 2, z);
+      // tienda: puerta abierta, refrigerador rojo, carteles y escalones
+      box(1.8, 2.25, 0.05, '#1d1b19', -42.7, 1.12, z1 + 0.03);
+      box(0.7, 1.75, 0.05, '#c4161c', -43.2, 0.88, z1 + 0.06);
+      box(0.5, 0.75, 0.04, '#f4f4f2', -41.2, 1.75, z1 + 0.03); box(0.5, 0.2, 0.045, '#d3262b', -41.2, 2.05, z1 + 0.035);
+      box(8.5, 0.18, 1.3, '#c9c4ba', -41.5, 0.09, z1 + 0.65); box(3.5, 0.34, 0.6, '#c9c4ba', -42.5, 0.17, z1 + 0.3);
+      box(1.0, 2.2, 0.05, '#6b4a33', -26.8, 1.1, z1 + 0.03); // puerta de madera
+      box(0.55, 0.32, 0.05, '#d3262b', -21.3, 2.95, z1 + 0.03); // letrero rojo
+      for (const z of [-57.4, -61.8]) box(0.05, 0.6, 0.5, '#2a3236', x0 - 0.03, 1.6, z); // ventanitas a la calle central
+      const rc = obb(cx, cz, W, D, 0); solido(rc); mapa.edificios.push({ pts: esquinas(rc), color: '#a3a09a' });
+    }
+  }
+
   // letreros de calle (solo conocemos «calle central»)
   const letreroCalle = (x, z, rot) => {
     L.lisos.push(new THREE.CylinderGeometry(0.05, 0.05, 2.8, 6), new THREE.Color('#5a5f63'), M(x, 1.4, z));
@@ -867,6 +919,23 @@ export function construirPueblo(scene, renderer) {
       geo.computeVertexNormals();
       const m = new THREE.Mesh(geo, mat);
       m.position.set(Math.cos(a) * d, h / 2 - 20, Math.sin(a) * d);
+      g.add(m);
+    }
+    // Cerro alto con cresta rocosa hacia el norte-noreste: se ve al fondo de la calle central en Street View (provisional)
+    {
+      const a = THREE.MathUtils.degToRad(31), d = 2000, h = 560;
+      const geo = new THREE.ConeGeometry(620, h, 12, 7, true);
+      const p = geo.attributes.position, cols = [];
+      for (let i = 0; i < p.count; i++) {
+        const y = p.getY(i), t = (y + h / 2) / h;
+        if (t < 0.99) { const k = 0.8 + r() * 0.35 + (t > 0.75 ? -0.25 : 0); p.setX(i, p.getX(i) * k); p.setZ(i, p.getZ(i) * k); }
+        const c = new THREE.Color().lerpColors(new THREE.Color('#5f7b52'), new THREE.Color(t > 0.72 ? '#a7aba6' : '#8ea3a6'), Math.min(1, t * 0.9));
+        cols.push(c.r, c.g, c.b);
+      }
+      geo.setAttribute('color', new THREE.Float32BufferAttribute(cols, 3));
+      geo.computeVertexNormals();
+      const m = new THREE.Mesh(geo, mat);
+      m.position.set(Math.sin(a) * d, h / 2 - 30, -Math.cos(a) * d);
       g.add(m);
     }
     scene.add(g);
