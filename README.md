@@ -79,7 +79,7 @@ Las prioridades están ordenadas de la más importante a la menos importante. La
 1. ~~Fachada de la Iglesia~~ ✅ reconstruida con foto de la comunidad. Faltan: muros laterales, la advocación (santo) y fotos antiguas.
 2. **Frente de la Agencia Municipal** (ya confirmamos que es la construcción blanca junto a la iglesia): ventanas, letrero, número de niveles.
 3. **Entrada de la escuela**: dónde está el portón y de qué color es la barda.
-4. **La construcción del centro de la plaza**: si es un kiosco y cómo es.
+4. ~~La construcción del centro de la plaza~~ ✅ kiosco octagonal en una plaza cuadrada con andadores en cruz y en X. Falta: color y fotos.
 5. **Cuatro esquinas del parque**: una foto desde cada esquina, mirando al centro.
 6. **Desnivel del terreno**: el modelo es plano por ahora. Hace falta saber si la calle central sube o baja y hacia dónde.
 7. **Fotos antiguas con año o década** de cualquier punto del tramo, y una foto nueva tomada desde el mismo lugar para comparar.

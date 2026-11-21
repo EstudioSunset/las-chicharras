@@ -267,60 +267,72 @@ export function construirPueblo(scene, renderer) {
   losa('concreto', CA.x - CA.ancho / 2, CA.desde, CA.x + CA.ancho / 2, CA.hasta, 0.022, 6, '#d9d4ca');
 
   // -------------------------------------------------------------- PARQUE CENTRAL
-  // superficie: tierra al poniente (estacionamiento bajo los ficus), plaza al centro y sur
-  losa('tierra', -46, -46, -31, 46, 0.03, 6, '#a88d66');
+  // superficie: tierra al poniente del domo (estacionamiento bajo los ficus) y plaza cuadrada al sur
+  losa('tierra', -46, -46, -31, 2.5, 0.03, 6, '#a88d66');
   losa('tierra', -46, -46, -26, -35, 0.031, 6, null);
-  losa('plaza', -31, -2, -3, 46, 0.03, 4, '#b77a63');
+  losa('plaza', -31, -2, -3, 2.5, 0.03, 4, '#bf8a72');
   losa('plaza', -26, -46, -3, -2, 0.03, 4, '#bf8a72');
-  // andadores en diagonal (más claros)
-  {
-    const diag = (x0, z0, x1, z1) => {
-      const len = Math.hypot(x1 - x0, z1 - z0);
-      const g = new THREE.PlaneGeometry(2.4, len); g.rotateX(-PI / 2);
-      g.rotateY(Math.atan2(x1 - x0, z1 - z0));
-      g.translate((x0 + x1) / 2, 0.036, (z0 + z1) / 2);
-      L.lisos.push(g, new THREE.Color('#d9b9a3'));
-    };
-    diag(-31, 0, -4, 45); diag(-4, 0, -31, 45);
-  }
-  // jardineras con pasto
-  const jardinera = (x, z, rad) => {
-    L.lisos.push(new THREE.CylinderGeometry(rad, rad, 0.4, 14, 1, true), new THREE.Color('#e9e3d6'), M(x, 0.2, z));
-    L.lisos.push(new THREE.CircleGeometry(rad, 14).rotateX(-PI / 2), new THREE.Color('#5d7f37'), M(x, 0.35, z));
-    colision.circulos.push({ x, z, r: rad + 0.2 });
-  };
 
-  // ficus del lado poniente, troncos encalados (visto en la foto)
-  const ficus = [[-38, -31], [-34, -24], [-39, -17], [-35, -9], [-38, -1], [-35, 7], [-38, 15], [-35, 24], [-38, 33], [-35, 41], [-30, -29]];
+  // ficus del lado poniente del domo, troncos encalados (foto de Street View)
+  const ficus = [[-38, -31], [-34, -24], [-39, -17], [-35, -9], [-38, -1], [-30, -29]];
   ficus.forEach(([x, z]) => arbol(x, z, { tipo: 'ficus', r: 4.6 + r() * 1.6, h: 3.2, color: r() < 0.5 ? '#3c6b26' : '#467a2c' }));
-  // árboles de la plaza (posiciones de la imagen satelital)
-  const plazaArb = [[-12, 1], [-7, 6], [-22, 9], [-29, 6], [-14, 19], [-8, 31], [-15, 38], [-32, 33], [-29, 42], [-23, 34], [-19, 27], [-9, 42], [-7, 17]];
-  plazaArb.forEach(([x, z]) => { jardinera(x, z, 1.3); arbol(x, z, { r: 2.6 + r() * 1.8 }); });
-  // bancas
+
   const banca = (x, z, rot) => {
     L.lisos.push(new THREE.BoxGeometry(1.8, 0.1, 0.5), new THREE.Color('#d6d0c4'), M(x, 0.45, z, rot));
     L.lisos.push(new THREE.BoxGeometry(0.2, 0.42, 0.4), new THREE.Color('#bdb6aa'), M(x - Math.cos(rot) * 0.7, 0.21, z + Math.sin(rot) * 0.7, rot));
     L.lisos.push(new THREE.BoxGeometry(0.2, 0.42, 0.4), new THREE.Color('#bdb6aa'), M(x + Math.cos(rot) * 0.7, 0.21, z - Math.sin(rot) * 0.7, rot));
   };
-  [[-17, 13, 0.6], [-11, 25, 0.6], [-27, 17, -0.6], [-20, 40, 0], [-12, 44, 0], [-4.5, 10, PI / 2], [-4.5, 30, PI / 2]].forEach((b) => banca(...b));
-  // faroles
   const farol = (x, z) => {
     L.lisos.push(new THREE.CylinderGeometry(0.07, 0.09, 3.6, 6), new THREE.Color('#2f3336'), M(x, 1.8, z));
     L.lisos.push(new THREE.SphereGeometry(0.25, 8, 6), new THREE.Color('#f5f0dc'), M(x, 3.7, z));
+    colision.circulos.push({ x, z, r: 0.15 });
   };
-  [[-20, 0], [-6, 22], [-30, 22], [-17, 45], [-4, -40], [-28, -44]].forEach((f) => farol(...f));
+  [[-4, -40], [-28, -44]].forEach((f) => farol(...f));
 
-  // kiosco (provisional)
+  // Plaza cuadrada (imagen satelital + comunidad): andadores en cruz y en X que se juntan en un kiosco octagonal
+  // al centro, andador perimetral y ocho jardineras triangulares con árboles.
   {
-    const kx = -25, kz = 24;
-    L.lisos.push(new THREE.CylinderGeometry(3.3, 3.5, 0.55, 8), new THREE.Color('#d8cfc0'), M(kx, 0.27, kz));
+    const CX = -24.5, CZ = 24, HS = 21.5;               // centro y medio lado del cuadrado
+    const AND = 1.6, PER = 3.2, R0 = 6.5;              // medio ancho de andadores, ancho perimetral, radio de la glorieta
+    losa('plaza', CX - HS, CZ - HS, CX + HS, CZ + HS, 0.03, 4, '#b77a63');
+    const hi = HS - PER, k = AND * Math.SQRT2;
+    const base = [[R0, AND], [hi, AND], [hi, hi - k], [R0 * 0.78 + k * 0.5, R0 * 0.78 - k * 0.5]];
+    for (let q = 0; q < 4; q++) for (const espejo of [1, -1]) {
+      const a = q * PI / 2, c = Math.cos(a), s = Math.sin(a);
+      const pts = base.map(([u, v]) => { v *= espejo; return [CX + u * c - v * s, CZ + u * s + v * c]; });
+      const forma = new THREE.Shape(pts.map(([x, z]) => new THREE.Vector2(x, -z)));
+      const bordillo = new THREE.ExtrudeGeometry(forma, { depth: 0.38, bevelEnabled: false }).rotateX(-PI / 2);
+      L.lisos.push(bordillo, new THREE.Color('#e6dfd2'));
+      const pasto = new THREE.ShapeGeometry(forma).rotateX(-PI / 2).translate(0, 0.39, 0);
+      L.lisos.push(pasto, new THREE.Color('#5d7f37'));
+      mapa.edificios.push({ pts, color: '#5d7f37' });
+      // árboles: uno hacia la orilla y otro hacia el centro de cada jardinera
+      const cx = pts.reduce((a2, p) => a2 + p[0], 0) / 4, cz = pts.reduce((a2, p) => a2 + p[1], 0) / 4;
+      const ex = (pts[1][0] + pts[2][0]) / 2, ez = (pts[1][1] + pts[2][1]) / 2;
+      arbol(cx + (ex - cx) * 0.45, cz + (ez - cz) * 0.45, { r: 2.6 + r() * 1.6 });
+      if (r() < 0.75) arbol(cx - (ex - cx) * 0.25, cz - (ez - cz) * 0.25, { r: 2.0 + r() * 1.4 });
+      colision.circulos.push({ x: cx, z: cz, r: 2.2 });
+    }
+    // faroles al final de cada andador y en las esquinas; bancas junto a la glorieta
+    for (let i = 0; i < 8; i++) {
+      const a = i * PI / 4, d = i % 2 ? (HS - PER / 2) * Math.SQRT2 * 0.97 : HS - PER / 2;
+      farol(CX + Math.cos(a) * d + Math.sin(a) * (AND + 0.4), CZ + Math.sin(a) * d - Math.cos(a) * (AND + 0.4));
+      if (i % 2 === 0) {
+        const bx = CX + Math.cos(a) * (R0 + 2.5), bz = CZ + Math.sin(a) * (R0 + 2.5);
+        for (const sg of [1, -1]) banca(bx - Math.sin(a) * sg * (AND - 0.35), bz + Math.cos(a) * sg * (AND - 0.35), -a);
+      }
+    }
+    // kiosco octagonal al centro
+    const KR = 2.7;
+    L.lisos.push(new THREE.CylinderGeometry(KR + 0.4, KR + 0.6, 0.5, 8), new THREE.Color('#d8cfc0'), M(CX, 0.25, CZ, PI / 8));
     for (let i = 0; i < 8; i++) {
       const a = (i / 8) * PI * 2 + PI / 8;
-      L.lisos.push(new THREE.CylinderGeometry(0.12, 0.12, 2.7, 6), new THREE.Color('#f1ede4'), M(kx + Math.cos(a) * 2.9, 1.9, kz + Math.sin(a) * 2.9));
+      L.lisos.push(new THREE.CylinderGeometry(0.11, 0.11, 2.6, 6), new THREE.Color('#f1ede4'), M(CX + Math.cos(a) * KR, 1.8, CZ + Math.sin(a) * KR));
     }
-    L.tejas.push(new THREE.ConeGeometry(4.1, 1.8, 8, 1), new THREE.Color('#ffffff'), M(kx, 4.1, kz, PI / 8));
-    colision.circulos.push({ x: kx, z: kz, r: 3.5 });
-    mapa.edificios.push({ x0: kx - 3.5, x1: kx + 3.5, z0: kz - 3.5, z1: kz + 3.5, color: '#a95a3d', redondo: true });
+    L.lisos.push(new THREE.CylinderGeometry(KR + 0.5, KR + 0.5, 0.2, 8), new THREE.Color('#e9e3d6'), M(CX, 3.15, CZ, PI / 8));
+    L.tejas.push(new THREE.ConeGeometry(KR + 0.9, 1.6, 8, 1), new THREE.Color('#ead2c4'), M(CX, 4.05, CZ, PI / 8));
+    colision.circulos.push({ x: CX, z: CZ, r: KR + 0.6 });
+    mapa.edificios.push({ x0: CX - KR, x1: CX + KR, z0: CZ - KR, z1: CZ + KR, color: '#b98a74', redondo: true });
   }
 
   // construcción anexa al norte del domo (muro crema con franja roja, visible en la foto)

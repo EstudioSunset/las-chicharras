@@ -124,18 +124,20 @@ export const LUGARES = [
   },
   {
     id: 'kiosco',
-    nombre: 'La plaza del parque', corto: 'Plaza',
-    pos: [-25, 24],
+    nombre: 'La plaza y el kiosco', corto: 'Kiosco',
+    pos: [-24.5, 24],
     radio: 10,
     foto: null,
-    provisional: true,
+    provisional: false,
     notaReconstruccion:
-      'En la imagen satelital se ve una construcción pequeña con techo en medio de la plaza. La reconstruimos como un kiosco, pero está por confirmar.',
+      'Forma de la plaza, andadores y kiosco según la imagen satelital y la descripción de la comunidad. ' +
+      'La altura del kiosco, sus columnas y los colores son aproximados.',
     documentado: [
-      { texto: 'La mitad sur del parque es una plaza con piso color ladrillo, andadores en diagonal y muchos árboles.', fuente: 'Imagen satelital de Google Maps' },
+      { texto: 'Junto al domo, la plaza del parque es cuadrada. Sus andadores la atraviesan en cruz y en X, y se juntan en el centro.', fuente: 'Imagen satelital de Google Maps · confirmado por la comunidad (2026)' },
+      { texto: 'En medio hay un pequeño kiosco de forma octagonal. Entre los andadores hay jardineras triangulares con árboles.', fuente: 'Imagen satelital de Google Maps · confirmado por la comunidad (2026)' },
     ],
     recuerdos: [],
-    pendiente: '¿Esa construcción es un kiosco? ¿De qué color es? ¿Hay bancas o jardineras especiales?',
+    pendiente: '¿De qué color es el kiosco? ¿Desde cuándo está? ¿Qué se hacía ahí en las fiestas?',
   },
   {
     id: 'adobe',
