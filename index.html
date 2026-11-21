@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="es-MX">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#2f4a32">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="description" content="Recorre Las Chicharras, Bella Vista, Chiapas, en 3D desde tu celular: reconoce sus calles y conoce las historias de quienes vivieron ahí.">
+  <title>Las Chicharras, antes y ahora</title>
+  <link rel="stylesheet" href="styles.css">
+  <script type="importmap">
+  { "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.min.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  } }
+  </script>
+</head>
+<body>
+  <canvas id="escena"></canvas>
+  <div id="velo"></div>
+  <img id="foto-superpuesta" alt="Fotografía histórica superpuesta" hidden>
+  <div id="capa-toque"></div>
+
+  <!-- palanca táctil -->
+  <div id="stick"><div id="knob"></div></div>
+  <div id="pista-stick" aria-hidden="true"><span>Mantén y desliza<br>para caminar</span></div>
+  <div id="pista-mirar" aria-hidden="true"><span>Arrastra para<br>mirar alrededor</span></div>
+
+  <!-- HUD superior -->
+  <div id="hud-sup">
+    <div class="izq">
+      <button id="btn-modo" class="chip" aria-haspopup="true">🚶 <span>A pie</span></button>
+      <div id="menu-modo" class="menu" hidden>
+        <button class="activo">🚶 A pie</button>
+        <button disabled>🐴 Burro <small>próximamente</small></button>
+        <button disabled>🚲 Bicicleta <small>próximamente</small></button>
+        <button disabled>🛺 Mototaxi <small>próximamente</small></button>
+      </div>
+    </div>
+    <div id="brujula" aria-label="Brújula"><div id="brujula-marcas"></div><div class="aguja"></div></div>
+    <div class="der">
+      <canvas id="minimapa" width="128" height="128" aria-label="Mapa (tocar para ampliar)"></canvas>
+      <div class="fila-iconos">
+        <button id="btn-sonido" class="icono" aria-label="Sonido">🔊</button>
+        <button id="btn-ayuda" class="icono" aria-label="Ayuda">?</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="insignia-era" hidden></div>
+  <div id="aviso" hidden></div>
+
+  <!-- HUD inferior derecho -->
+  <div id="hud-inf">
+    <button id="btn-conocer" hidden>
+      <span class="t">Conocer este lugar</span>
+      <span class="n"></span>
+    </button>
+    <div id="antes-ahora" role="group" aria-label="Antes / Ahora">
+      <button data-era="antes">Antes</button>
+      <button data-era="ahora" class="activo">Ahora</button>
+    </div>
+  </div>
+
+  <!-- comparador de fotografía -->
+  <div id="comparador" hidden>
+    <img id="comp-mini" alt="">
+    <div class="cuerpo">
+      <strong>Foto antigua de este lugar</strong>
+      <small id="comp-credito"></small>
+      <div class="acciones">
+        <button id="btn-alinear">Ver desde el ángulo de la foto</button>
+        <label id="lbl-opacidad" hidden>Foto <input id="opacidad" type="range" min="0" max="100" value="65"></label>
+        <button id="btn-salir-comp" hidden>Salir</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- panel de historia -->
+  <section id="panel" hidden aria-modal="true" role="dialog">
+    <div class="hoja">
+      <button class="cerrar" aria-label="Cerrar">×</button>
+      <div id="panel-contenido"></div>
+    </div>
+  </section>
+
+  <!-- mapa ampliado -->
+  <section id="mapa-grande" hidden>
+    <canvas id="mapa-canvas"></canvas>
+    <button class="cerrar" aria-label="Cerrar mapa">×</button>
+    <p class="leyenda">Norte arriba · <span class="dot ruta"></span> ruta sugerida · <span class="dot lugar"></span> lugar con historia</p>
+  </section>
+
+  <!-- portada -->
+  <section id="portada">
+    <div class="tarjeta">
+      <p class="sobre">Las Chicharras · Bella Vista · Chiapas</p>
+      <h1>Las Chicharras,<br><em>antes y ahora</em></h1>
+      <p>Camina por la calle central, el parque y la escuela. Reconoce los lugares y descubre sus historias.</p>
+      <ul id="datos-pueblo"></ul>
+      <div class="como">
+        <div><b>Celular</b> Mantén y desliza a la izquierda para caminar · arrastra a la derecha para mirar.</div>
+        <div><b>Computadora</b> W A S D o flechas · arrastra con el ratón · <kbd>E</kbd> conocer · <kbd>T</kbd> antes/ahora · <kbd>M</kbd> mapa.</div>
+      </div>
+      <button id="btn-entrar" disabled>Cargando el pueblo…</button>
+      <p class="nota">Prototipo. La reconstrucción se basa en imágenes satelitales y de Street View; lo que todavía no está confirmado aparece marcado como <b>provisional</b>.</p>
+    </div>
+  </section>
+
+  <noscript><p style="padding:2rem">Esta experiencia necesita JavaScript.</p></noscript>
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
