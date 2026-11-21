@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { construirPueblo } from './world.js';
 import { Controles } from './controls.js';
 import { Sonido } from './audio.js';
-import { META, LUGARES, FOTO_ANTES, INICIO, RUTA } from './data.js';
+import { META, LUGARES, FOTO_ANTES, INICIO, RUTA, ESCALA, DECLINACION } from './data.js';
 
 const $ = (s) => document.querySelector(s);
 const esMovil = matchMedia('(pointer: coarse)').matches;
@@ -35,7 +35,12 @@ scene.add(sol);
 const camera = new THREE.PerspectiveCamera(70, innerWidth / innerHeight, 0.3, 3200);
 camera.rotation.order = 'YXZ';
 
-const pueblo = construirPueblo(scene, renderer);
+// El pueblo se construye en «unidades de juego» y se dibuja escalado: 1 unidad = ESCALA metros reales
+// (las calles de OpenStreetMap mostraron cuadras de ~95 m donde el satélite sugería 100).
+const mundo = new THREE.Group();
+mundo.scale.set(ESCALA, 1, ESCALA);
+scene.add(mundo);
+const pueblo = construirPueblo(mundo, renderer);
 const { colision, mapa, eras } = pueblo;
 
 // ------------------------------------------------------------------ estado
@@ -84,14 +89,17 @@ function resolver(p) {
   }
   for (const b of colision.rects) {
     if (b.era && b.era !== era) continue;
-    if (p.x > b.x0 - RADIO && p.x < b.x1 + RADIO && p.z > b.z0 - RADIO && p.z < b.z1 + RADIO) {
-      const izq = p.x - (b.x0 - RADIO), der = b.x1 + RADIO - p.x, arr = p.z - (b.z0 - RADIO), aba = b.z1 + RADIO - p.z;
-      const m = Math.min(izq, der, arr, aba);
-      if (m === izq) p.x = b.x0 - RADIO; else if (m === der) p.x = b.x1 + RADIO;
-      else if (m === arr) p.z = b.z0 - RADIO; else p.z = b.z1 + RADIO;
+    const dx = p.x - b.cx, dz = p.z - b.cz;
+    if (Math.abs(dx) > 40 || Math.abs(dz) > 40) continue;
+    const c = Math.cos(b.rot), s = Math.sin(b.rot);
+    let lx = dx * c - dz * s, lz = dx * s + dz * c; // coordenadas locales del rectángulo
+    const ex = b.hw + RADIO, ez = b.hd + RADIO;
+    if (Math.abs(lx) < ex && Math.abs(lz) < ez) {
+      if (ex - Math.abs(lx) < ez - Math.abs(lz)) lx = Math.sign(lx || 1) * ex; else lz = Math.sign(lz || 1) * ez;
+      p.x = b.cx + lx * c + lz * s; p.z = b.cz - lx * s + lz * c;
     }
   }
-  p.x = Math.max(-560, Math.min(560, p.x)); p.z = Math.max(-560, Math.min(560, p.z));
+  p.x = Math.max(-640, Math.min(640, p.x)); p.z = Math.max(-640, Math.min(640, p.z));
 }
 
 // ------------------------------------------------------------------ bucle
@@ -101,7 +109,7 @@ function ciclo() {
   requestAnimationFrame(ciclo);
   const dt = Math.min(reloj.getDelta(), 0.05);
   if (!pausado) actualizar(dt);
-  camera.position.set(jugador.x, OJOS + jugador.bob, jugador.z);
+  camera.position.set(jugador.x * ESCALA, OJOS + jugador.bob, jugador.z * ESCALA);
   camera.rotation.set(ctl.pitch, ctl.yaw, 0);
   renderer.render(scene, camera);
   if (!pausado) {
@@ -118,7 +126,7 @@ function ciclo() {
 
 function actualizar(dt) {
   const { adelante, lado, correr } = ctl.leer(dt);
-  const vel = correr ? 4.4 : 2.5;
+  const vel = (correr ? 4.4 : 2.5) / ESCALA; // m/s reales
   const sy = Math.sin(ctl.yaw), cy = Math.cos(ctl.yaw);
   // adelante = -z local; lado = +x local
   const vx = (-sy * adelante + cy * lado) * vel, vz = (-cy * adelante - sy * lado) * vel;
@@ -130,7 +138,7 @@ function actualizar(dt) {
   if (recorrido > 0.001) {
     jugador.paso += recorrido;
     jugador.bob = Math.sin(jugador.paso * 4.2) * 0.035;
-    if (jugador.paso > 0.78) { jugador.paso -= 0.78 * 1; sonido.paso(correr ? 1.2 : 0.9); }
+    if (jugador.paso > 0.82) { jugador.paso -= 0.82; sonido.paso(correr ? 1.2 : 0.9); }
   } else jugador.bob *= 0.85;
 
   // salir de la vista alineada si el visitante se mueve o gira
@@ -156,7 +164,7 @@ function actualizar(dt) {
 }
 
 const angDif = (a, b) => Math.atan2(Math.sin(a - b), Math.cos(a - b));
-// rumbo (0 = norte, 90 = este)
+// rumbo en el sistema del juego (0 = «arriba» de la retícula). El norte real está DECLINACION grados a la izquierda.
 const rumbo = () => (THREE.MathUtils.radToDeg(Math.atan2(-Math.sin(ctl.yaw), Math.cos(ctl.yaw))) + 360) % 360;
 
 // ------------------------------------------------------------------ brújula
@@ -165,7 +173,7 @@ const PUNTOS = [['N', 0], ['NE', 45], ['E', 90], ['SE', 135], ['S', 180], ['SO',
 const spans = PUNTOS.map(([t, a]) => { const s = document.createElement('span'); s.textContent = t; if (t.length > 1) s.classList.add('menor'); if (t === 'N') s.classList.add('norte'); marcas.appendChild(s); return [s, a]; });
 const spansLugar = LUGARES.map((l) => { const s = document.createElement('span'); s.className = 'lugar'; s.textContent = l.corto; marcas.appendChild(s); return [s, l]; });
 function brujula() {
-  const w = marcas.clientWidth, h = rumbo(), ppg = w / 150;
+  const w = marcas.clientWidth, h = rumbo() + DECLINACION, ppg = w / 150;
   for (const [s, a] of spans) {
     const d = ((a - h + 540) % 360) - 180;
     s.style.display = Math.abs(d) > 75 ? 'none' : '';
@@ -177,7 +185,7 @@ function brujula() {
     .map(([s, l]) => [s, l, Math.hypot(l.pos[0] - jugador.x, l.pos[1] - jugador.z)])
     .sort((a, b) => a[2] - b[2])
     .forEach(([s, l, dist]) => {
-      const a = (THREE.MathUtils.radToDeg(Math.atan2(l.pos[0] - jugador.x, -(l.pos[1] - jugador.z))) + 360) % 360;
+      const a = (THREE.MathUtils.radToDeg(Math.atan2(l.pos[0] - jugador.x, -(l.pos[1] - jugador.z))) + DECLINACION + 360) % 360;
       const d = ((a - h + 540) % 360) - 180, x = w / 2 + d * ppg;
       const ver = Math.abs(d) < 60 && dist < 160 && dist > l.radio && puestos.every((p) => Math.abs(p - x) > 56);
       s.style.display = ver ? '' : 'none';
@@ -186,21 +194,26 @@ function brujula() {
 }
 
 // ------------------------------------------------------------------ minimapa
-const ESC = 2, EXT = 300; // 2 px por metro, de -300 a 300 m
+const ESC = 1.5, EXT = 600; // 1.5 px por unidad, de -600 a 600
 const mapaBase = document.createElement('canvas');
 mapaBase.width = mapaBase.height = EXT * 2 * ESC;
 {
   const c = mapaBase.getContext('2d');
   const X = (x) => (x + EXT) * ESC;
   for (const s of mapa.suelos) { c.fillStyle = s.color; c.fillRect(X(s.x0), X(s.z0), (s.x1 - s.x0) * ESC, (s.z1 - s.z0) * ESC); }
+  c.lineCap = 'round';
+  for (const k of mapa.calles) {
+    c.strokeStyle = k.color; c.lineWidth = k.w * ESC;
+    c.beginPath(); c.moveTo(X(k.a[0]), X(k.a[1])); c.lineTo(X(k.b[0]), X(k.b[1])); c.stroke();
+  }
   c.fillStyle = 'rgba(52,88,38,.75)';
   for (const [x, z, r] of mapa.arboles) { c.beginPath(); c.arc(X(x), X(z), r * ESC * 0.8, 0, 7); c.fill(); }
   for (const e of mapa.edificios) {
     c.fillStyle = e.color;
-    if (e.redondo) { c.beginPath(); c.arc(X((e.x0 + e.x1) / 2), X((e.z0 + e.z1) / 2), (e.x1 - e.x0) * ESC / 2, 0, 7); c.fill(); }
-    else c.fillRect(X(e.x0), X(e.z0), (e.x1 - e.x0) * ESC, (e.z1 - e.z0) * ESC);
     c.strokeStyle = 'rgba(0,0,0,.25)'; c.lineWidth = 1;
-    if (!e.redondo) c.strokeRect(X(e.x0), X(e.z0), (e.x1 - e.x0) * ESC, (e.z1 - e.z0) * ESC);
+    if (e.redondo) { c.beginPath(); c.arc(X((e.x0 + e.x1) / 2), X((e.z0 + e.z1) / 2), (e.x1 - e.x0) * ESC / 2, 0, 7); c.fill(); continue; }
+    const pts = e.pts || [[e.x0, e.z0], [e.x1, e.z0], [e.x1, e.z1], [e.x0, e.z1]];
+    c.beginPath(); pts.forEach(([x, z], i) => (i ? c.lineTo(X(x), X(z)) : c.moveTo(X(x), X(z)))); c.closePath(); c.fill(); c.stroke();
   }
   c.strokeStyle = '#ffe08a'; c.lineWidth = 3; c.setLineDash([6, 5]);
   c.beginPath(); RUTA.forEach(([x, z], i) => (i ? c.lineTo(X(x), X(z)) : c.moveTo(X(x), X(z)))); c.stroke(); c.setLineDash([]);
@@ -226,9 +239,12 @@ function minimapa() {
   const u = 6 * dprMapa;
   mctx.beginPath(); mctx.moveTo(0, -u * 1.5); mctx.lineTo(u, u); mctx.lineTo(0, u * 0.45); mctx.lineTo(-u, u); mctx.closePath(); mctx.fill(); mctx.stroke();
   mctx.restore();
-  // N
-  mctx.fillStyle = '#fff'; mctx.font = `bold ${11 * dprMapa}px system-ui`; mctx.textAlign = 'center';
-  mctx.fillText('N', S / 2, 13 * dprMapa);
+  // N real (la retícula del pueblo está girada respecto al norte)
+  const aN = THREE.MathUtils.degToRad(-DECLINACION), rN = S / 2 - 9 * dprMapa;
+  mctx.fillStyle = '#fff'; mctx.strokeStyle = 'rgba(0,0,0,.6)'; mctx.lineWidth = 3 * dprMapa;
+  mctx.font = `bold ${11 * dprMapa}px system-ui`; mctx.textAlign = 'center'; mctx.textBaseline = 'middle';
+  mctx.strokeText('N', S / 2 + Math.sin(aN) * rN, S / 2 - Math.cos(aN) * rN);
+  mctx.fillText('N', S / 2 + Math.sin(aN) * rN, S / 2 - Math.cos(aN) * rN);
 }
 
 // mapa grande
@@ -256,7 +272,9 @@ function abrirMapa() {
   c.save(); c.translate(jx, jy); c.rotate(THREE.MathUtils.degToRad(rumbo()));
   const u = tam / 60; c.fillStyle = '#fff'; c.strokeStyle = '#000'; c.lineWidth = 2;
   c.beginPath(); c.moveTo(0, -u * 1.5); c.lineTo(u, u); c.lineTo(0, u * 0.45); c.lineTo(-u, u); c.closePath(); c.fill(); c.stroke(); c.restore();
-  c.fillStyle = '#fff'; c.font = `bold ${Math.round(tam / 30)}px system-ui`; c.fillText('N ↑', tam - tam / 18, tam / 18 + 8);
+  c.save(); c.translate(tam - tam / 14, tam / 14); c.rotate(THREE.MathUtils.degToRad(-DECLINACION));
+  c.fillStyle = '#fff'; c.font = `bold ${Math.round(tam / 30)}px system-ui`; c.textAlign = 'center'; c.fillText('N', 0, -tam / 60);
+  c.beginPath(); c.moveTo(0, -tam / 120); c.lineTo(tam / 80, tam / 30); c.lineTo(-tam / 80, tam / 30); c.closePath(); c.fill(); c.restore();
 }
 function cerrarMapa() { if (!mapaAbierto()) return; $('#mapa-grande').hidden = true; pausar(false); }
 mm.addEventListener('click', abrirMapa);

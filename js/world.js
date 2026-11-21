@@ -3,7 +3,8 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import * as TX from './textures.js';
-import { GRID, CALLES_CONCRETO, CALLE_ANGOSTA } from './data.js';
+import { CALLE_ANGOSTA } from './data.js';
+import { CALLES } from './calles.js';
 
 const PI = Math.PI;
 const V3 = (x, y, z) => new THREE.Vector3(x, y, z);
@@ -42,6 +43,7 @@ class Lote {
 }
 
 // Caja con UV para el atlas de fachadas (cara frontal = +z local).
+const NT = 5; // mosaicos en el atlas
 function caja(w, h, d, { tile = null, uvEsc = null } = {}) {
   const g = new THREE.BoxGeometry(w, h, d);
   const uv = g.attributes.uv;
@@ -49,7 +51,7 @@ function caja(w, h, d, { tile = null, uvEsc = null } = {}) {
     for (let f = 0; f < 6; f++) for (let k = 0; k < 4; k++) {
       const i = f * 4 + k;
       const t = f === 4 ? tile : 0;
-      uv.setX(i, (t + 0.01 + uv.getX(i) * 0.98) / 4);
+      uv.setX(i, (t + 0.01 + uv.getX(i) * 0.98) / NT);
     }
   } else if (uvEsc) {
     for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) * uvEsc[0], uv.getY(i) * uvEsc[1]);
@@ -66,7 +68,7 @@ function hastiales(w, d, r) {
   }
   const g = new THREE.BufferGeometry();
   g.setAttribute('position', new THREE.Float32BufferAttribute(p, 3));
-  g.setAttribute('uv', new THREE.Float32BufferAttribute(new Array(24).fill(0).map((_, i) => (i % 2 ? 0.5 : 0.05)), 2));
+  g.setAttribute('uv', new THREE.Float32BufferAttribute(new Array(24).fill(0).map((_, i) => (i % 2 ? 0.5 : 0.02)), 2));
   g.computeVertexNormals();
   return g;
 }
@@ -78,7 +80,7 @@ export function construirPueblo(scene, renderer) {
   const r = TX.rng(2026);
   const T = {
     concreto: TX.concreto(), tierra: TX.tierra(), pasto: TX.pasto(), plaza: TX.plaza(),
-    lamina: TX.lamina(), teja: TX.teja(), atlas: TX.atlasFachadas(), cancha: TX.cancha(), sombra: TX.sombra(),
+    lamina: TX.lamina(), teja: TX.teja(), adobe: TX.adobe(), atlas: TX.atlasFachadas(), cancha: TX.cancha(), sombra: TX.sombra(),
   };
   const aniso = Math.min(4, renderer.capabilities.getMaxAnisotropy());
   Object.values(T).forEach((t) => (t.anisotropy = aniso));
@@ -88,8 +90,9 @@ export function construirPueblo(scene, renderer) {
     techos: new THREE.MeshLambertMaterial({ map: T.lamina, vertexColors: true, side: THREE.DoubleSide }),
     tejas: new THREE.MeshLambertMaterial({ map: T.teja, vertexColors: true, side: THREE.DoubleSide }),
     lisos: new THREE.MeshLambertMaterial({ vertexColors: true }),
+    adobe: new THREE.MeshLambertMaterial({ map: T.adobe, vertexColors: true }),
   };
-  const L = { muros: new Lote(), techos: new Lote(), tejas: new Lote(), lisos: new Lote() };
+  const L = { muros: new Lote(), techos: new Lote(), tejas: new Lote(), lisos: new Lote(), adobe: new Lote() };
 
   const colision = { rects: [], circulos: [] };
   const mapa = { suelos: [], edificios: [], arboles: [] };
@@ -98,12 +101,14 @@ export function construirPueblo(scene, renderer) {
   eras.antes.visible = false;
   scene.add(eras.antes, eras.ahora);
 
-  const rectMundo = (cx, cz, w, d, rotY) => {
-    const sw = Math.abs(Math.sin(rotY)) > 0.5;
-    const W = sw ? d : w, D = sw ? w : d;
-    return { x0: cx - W / 2, x1: cx + W / 2, z0: cz - D / 2, z1: cz + D / 2 };
+  // rectángulos orientados: { cx, cz, hw, hd, rot } (rot = giro en Y)
+  const obb = (cx, cz, w, d, rot = 0) => ({ cx, cz, hw: w / 2, hd: d / 2, rot });
+  const deAABB = (b) => obb((b.x0 + b.x1) / 2, (b.z0 + b.z1) / 2, b.x1 - b.x0, b.z1 - b.z0, 0);
+  const esquinas = (o) => {
+    const c = Math.cos(o.rot), s = Math.sin(o.rot);
+    return [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([a, b]) => [o.cx + a * o.hw * c + b * o.hd * s, o.cz - a * o.hw * s + b * o.hd * c]);
   };
-  const solido = (rc, era = null) => colision.rects.push({ ...rc, era });
+  const solido = (rc, era = null) => colision.rects.push({ ...(rc.hw ? rc : deAABB(rc)), era });
 
   // -------------------------------------------------------------- CASAS
   function casa(cx, cz, w, d, h, rotY, o = {}) {
@@ -127,7 +132,7 @@ export function construirPueblo(scene, renderer) {
       const tri = [];
       for (const sx of [-w / 2, w / 2]) tri.push(sx, yb, z0, sx, yb, z1, sx, yt, hi, sx, yb, z0, sx, yt, hi, sx, yb, z1);
       p.setAttribute('position', new THREE.Float32BufferAttribute(tri, 3));
-      p.setAttribute('uv', new THREE.Float32BufferAttribute(new Array(24).fill(0).map((_, i) => (i % 2 ? 0.5 : 0.05)), 2));
+      p.setAttribute('uv', new THREE.Float32BufferAttribute(new Array(24).fill(0).map((_, i) => (i % 2 ? 0.5 : 0.02)), 2));
       p.computeVertexNormals();
       L.muros.push(p, muro, H);
     } else if (tipo === 'dos') {
@@ -141,36 +146,10 @@ export function construirPueblo(scene, renderer) {
     } else if (tipo === 'plana') {
       L.lisos.push(caja(w + 0.3, 0.25, d + 0.3), techo, H.clone().multiply(M(0, h + 0.12, 0)));
     }
-    const rc = rectMundo(cx, cz, w, d, rotY);
+    const rc = obb(cx, cz, w, d, rotY);
     if (o.solido !== false) solido(rc);
-    mapa.edificios.push({ ...rc, color: '#' + (o.techoMapa ?? techo.getHexString(THREE.SRGBColorSpace)) });
+    mapa.edificios.push({ pts: esquinas(rc), color: '#' + (o.techoMapa ?? techo.getHexString(THREE.SRGBColorSpace)) });
     return rc;
-  }
-
-  // Fila de casas a lo largo de un lado de manzana.
-  function fila(bx, bz, lado, desde, hasta, { prob = 0.72, prof = [6, 10], tiendas = 0.1 } = {}) {
-    const E = 46;
-    let t = desde;
-    while (t < hasta - 5) {
-      const w = Math.min(7 + r() * 6, hasta - t);
-      if (r() < prob) {
-        const d = prof[0] + r() * (prof[1] - prof[0]);
-        const s = 0.2 + r() * 1.8;
-        const h = r() < 0.07 ? 5.6 : 2.6 + r() * 0.7;
-        const tile = r() < tiendas ? 3 : undefined;
-        if (lado === 'n') casa(bx + t + w / 2, bz - E + s + d / 2, w - 0.4, d, h, PI, { tile });
-        if (lado === 's') casa(bx + t + w / 2, bz + E - s - d / 2, w - 0.4, d, h, 0, { tile });
-        if (lado === 'o') casa(bx - E + s + d / 2, bz + t + w / 2, w - 0.4, d, h, -PI / 2, { tile });
-        if (lado === 'e') casa(bx + E - s - d / 2, bz + t + w / 2, w - 0.4, d, h, PI / 2, { tile });
-      } else if (r() < 0.7) {
-        const k = 4 + r() * 4;
-        if (lado === 'n') arbol(bx + t + w / 2, bz - E + k);
-        if (lado === 's') arbol(bx + t + w / 2, bz + E - k);
-        if (lado === 'o') arbol(bx - E + k, bz + t + w / 2);
-        if (lado === 'e') arbol(bx + E - k, bz + t + w / 2);
-      }
-      t += w + r() * 1.2;
-    }
   }
 
   // -------------------------------------------------------------- ÁRBOLES
@@ -215,46 +194,62 @@ export function construirPueblo(scene, renderer) {
     const uv = g.attributes.uv;
     for (let i = 0; i < uv.count; i++) uv.setXY(i, (x0 + uv.getX(i) * (x1 - x0)) / rep, (-z1 + uv.getY(i) * (z1 - z0)) / rep);
     g.translate((x0 + x1) / 2, y, (z0 + z1) / 2);
-    suelos[tipo].push(g);
+    suelos[tipo].push(g.toNonIndexed());
     if (mapaColor) mapa.suelos.push({ x0, z0, x1, z1, color: mapaColor });
   };
 
   // terreno general (pasto) — grande para que el horizonte no se corte
   const base = suelo(-1500, -1500, 1500, 1500, T.pasto, 0, 8, '#ffffff');
   base.material.map.repeat.set(1, 1);
-  mapa.suelos.push({ x0: -300, z0: -300, x1: 300, z1: 300, color: '#6b8b45' });
+  mapa.suelos.push({ x0: -600, z0: -600, x1: 600, z1: 600, color: '#6b8b45' });
   // patios de tierra dentro del pueblo
-  losa('tierra', -255, -255, 255, 255, 0.005, 6, '#8a7a5a');
+  losa('tierra', -300, -300, 300, 300, 0.005, 6, null);
 
-  // calles
-  const { paso, anchoCalle: AC, manzanas: N } = GRID;
-  const lim = paso * N + paso / 2;
-  const esConcreto = (ns, en, a, b) => CALLES_CONCRETO.find((c) => c.ns === ns && c.en === en && a >= c.desde - 0.1 && b <= c.hasta + 0.1);
-  for (let k = -N; k <= N + 1; k++) {
-    const en = k * paso - paso / 2;
-    for (const ns of [true, false]) {
-      // cada calle se divide en tramos de cuadra para alternar concreto/terracería
-      for (let s = -N; s <= N; s++) {
-        const a = s * paso - paso / 2, b = a + paso;
-        const conc = esConcreto(ns, en, a, b);
-        const tipo = conc ? 'concreto' : 'tierra';
-        const y = conc ? 0.02 : 0.012;
-        const col = conc ? '#cfcac0' : '#b49a72';
-        if (ns) losa(tipo, en - AC / 2, a - AC / 2, en + AC / 2, b + AC / 2, y + (conc ? 0.001 : 0), 6, col);
-        else losa(tipo, a - AC / 2, en - AC / 2, b + AC / 2, en + AC / 2, y, 6, col);
-        if (conc) {
-          // guarniciones (bordillo) a ambos lados
-          for (const sgn of [-1, 1]) {
-            if (ns) L.lisos.push(new THREE.BoxGeometry(0.2, 0.18, paso - AC), new THREE.Color('#d8d4cb'), M(en + sgn * (AC / 2 + 0.1), 0.09, (a + b) / 2));
-            else L.lisos.push(new THREE.BoxGeometry(paso - AC, 0.18, 0.2), new THREE.Color('#d8d4cb'), M((a + b) / 2, 0.09, en + sgn * (AC / 2 + 0.1)));
-          }
-        }
-      }
+  // calles reales (OpenStreetMap vía CADMapper). Se omiten las que caen dentro de la manzana del parque,
+  // que se dibuja con medidas propias tomadas del satélite.
+  const SEG = [];
+  for (const c of CALLES) {
+    const w = c.tipo === 'principal' ? 8 : 7;
+    for (let i = 0; i < c.pts.length - 1; i++) {
+      const [ax, az] = c.pts[i], [bx, bz] = c.pts[i + 1];
+      const mx = (ax + bx) / 2, mz = (az + bz) / 2;
+      if (Math.abs(mx) < 46 && Math.abs(mz) < 46) continue;
+      const len = Math.hypot(bx - ax, bz - az);
+      if (len < 0.5) continue;
+      // la calle central al sur del parque es de terracería en Street View (foto de la casa de adobe)
+      const conc = !(Math.abs(mx + 50) < 6 && mz > 54) && (c.tipo === 'principal' || (Math.abs(mx) < 160 && Math.abs(mz) < 160));
+      SEG.push({ ax, az, bx, bz, len, dx: (bx - ax) / len, dz: (bz - az) / len, w, conc });
     }
+  }
+  const distSeg = (px, pz, sg) => {
+    let t = (px - sg.ax) * sg.dx + (pz - sg.az) * sg.dz;
+    t = Math.max(0, Math.min(sg.len, t));
+    return Math.hypot(px - (sg.ax + sg.dx * t), pz - (sg.az + sg.dz * t));
+  };
+  const distCalle = (px, pz) => {
+    let m = Infinity;
+    for (const sg of SEG) { const d = distSeg(px, pz, sg) - sg.w / 2; if (d < m) m = d; }
+    return m;
+  };
+  const franja = (tipo, sg, y) => {
+    const g = new THREE.PlaneGeometry(sg.len, sg.w); g.rotateX(-PI / 2);
+    g.rotateY(Math.atan2(-sg.dz, sg.dx));
+    g.translate((sg.ax + sg.bx) / 2, y, (sg.az + sg.bz) / 2);
+    const disco = new THREE.CircleGeometry(sg.w / 2, 12).rotateX(-PI / 2).translate(sg.bx, y, sg.bz);
+    for (const gg of [g, disco]) {
+      const p = gg.attributes.position, uv = gg.attributes.uv;
+      for (let i = 0; i < p.count; i++) uv.setXY(i, p.getX(i) / 6, -p.getZ(i) / 6);
+      suelos[tipo].push(gg.index ? gg.toNonIndexed() : gg);
+    }
+  };
+  mapa.calles = [];
+  for (const sg of SEG) {
+    franja(sg.conc ? 'concreto' : 'tierra', sg, sg.conc ? 0.021 : 0.012);
+    mapa.calles.push({ a: [sg.ax, sg.az], b: [sg.bx, sg.bz], w: sg.w, color: sg.conc ? '#d9d4ca' : '#b9a079' });
   }
   // andador entre parque y escuela
   const CA = CALLE_ANGOSTA;
-  losa('concreto', CA.x - CA.ancho / 2, CA.desde, CA.x + CA.ancho / 2, CA.hasta, 0.022, 6, '#cfcac0');
+  losa('concreto', CA.x - CA.ancho / 2, CA.desde, CA.x + CA.ancho / 2, CA.hasta, 0.022, 6, '#d9d4ca');
 
   // -------------------------------------------------------------- PARQUE CENTRAL
   // superficie: tierra al poniente (estacionamiento bajo los ficus), plaza al centro y sur
@@ -343,9 +338,7 @@ export function construirPueblo(scene, renderer) {
   letreroPlano('ESCUELA PRIMARIA «16 DE SEPTIEMBRE»', 3.05, 3.0, -12, 5.4, 0.45, -PI / 2, { fondo: '#1e5a36', color: '#ffffff', fuente: 'bold 30px sans-serif', w: 640, h: 56 });
 
   // resto de la manzana central (sureste): casas y huerta
-  fila(0, 0, 'e', 15, 46, { prob: 0.8 });
-  fila(0, 0, 's', 5, 34, { prob: 0.8 });
-  for (let i = 0; i < 12; i++) arbol(8 + r() * 26, 18 + r() * 16);
+  for (let i = 0; i < 10; i++) arbol(8 + r() * 24, 18 + r() * 12);
 
   // -------------------------------------------------------------- MANZANA DE LA IGLESIA Y LA AGENCIA (x -150..-50)
   const BX = -100;
@@ -427,20 +420,21 @@ export function construirPueblo(scene, renderer) {
     }
     solido({ x0: RX - 0.25, x1: RX + 0.25, z0: 1.5, z1: 16 });
   }
-  // Agencia Municipal: portal hacia la calle central (provisional), techos rojizos
-  casa(-65, 28, 20, 14, 3.6, PI / 2, { muro: '#f4ecd8', techo: '#b5654a', tile: 2, tipoTecho: 'una', techoTeja: true, techoMapa: 'b5654a' });
+  // Agencia Municipal: construcción blanca de dos niveles junto a la iglesia (confirmado por la comunidad;
+  // se alcanza a ver a la izquierda en la foto de la iglesia). Techos planos con impermeabilizante rojo (satélite).
+  // Fachada, ventanas y letrero: provisionales hasta tener foto del frente.
   {
-    // portal: columnas y techo de teja
-    for (let i = 0; i < 6; i++) {
-      const z = 19 + i * 3.6;
-      L.lisos.push(new THREE.BoxGeometry(0.4, 3.3, 0.4), new THREE.Color('#f4ecd8'), M(-55.2, 1.65, z));
-      colision.circulos.push({ x: -55.2, z, r: 0.3 });
-    }
-    L.tejas.push(caja(3.4, 0.08, 20.6, { uvEsc: [2, 10] }), new THREE.Color('#ffffff'), M(-56.4, 3.55, 28, 0, 0, -0.18));
-    letreroPlano('AGENCIA MUNICIPAL', -57.9, 3.0, 28, 7, 0.7, PI / 2, { fondo: '#f4ecd8', color: '#7a2e1f', fuente: 'bold 46px serif', h: 90 });
-    losa('concreto', -57.9, 18, -54.6, 38, 0.04, 3, null);
+    const cx = -62.8, cz = 27.5, W = 21, D = 16.4, BL = new THREE.Color('#f3f2ee');
+    L.muros.push(caja(W, 3.2, D, { tile: 2 }), BL, M(cx, 1.6, cz, PI / 2));
+    L.muros.push(caja(W, 3.0, D, { tile: 4 }), BL, M(cx, 4.7, cz, PI / 2));
+    L.lisos.push(new THREE.BoxGeometry(D + 0.3, 0.3, W + 0.3), new THREE.Color('#e9e7e1'), M(cx, 3.25, cz));
+    L.lisos.push(new THREE.BoxGeometry(D + 0.4, 0.5, W + 0.4), BL, M(cx, 6.45, cz));
+    L.lisos.push(new THREE.BoxGeometry(D - 0.6, 0.06, W - 0.6), new THREE.Color('#b5523b'), M(cx, 6.72, cz));
+    letreroPlano('AGENCIA MUNICIPAL', cx + D / 2 + 0.16, 3.62, cz, 7, 0.55, PI / 2, { fondo: '#f3f2ee', color: '#7a2e1f', fuente: 'bold 46px serif', h: 84 });
+    const rc = obb(cx, cz, W, D, PI / 2); solido(rc);
+    mapa.edificios.push({ pts: esquinas(rc), color: '#b5523b' });
   }
-  casa(-84.5, 28, 24, 25, 4.4, PI / 2, { muro: '#e9dfcc', techo: '#9a4a3a', tile: 0, tipoTecho: 'dos', caidaAtras: false });
+  casa(-84.5, 28, 24, 25, 3.8, PI / 2, { muro: '#f3f2ee', techo: '#b5523b', tile: 0, tipoTecho: 'plana' });
   casa(-64.5, 43, 19, 5.5, 3, 0, { tile: 3, techo: '#e6e9ec' });
   // tramo norte de la calle central (lado poniente): tienda de fachada verde y techo rojo + barda gris (vistas en la foto)
   casa(-58.5, -40, 9, 8, 3.4, PI / 2, { muro: '#3f9a8c', techo: '#a2503e', tile: 3, tipoTecho: 'una' });
@@ -448,10 +442,36 @@ export function construirPueblo(scene, renderer) {
   casa(-65.2, -8, 18, 20, 3.3, PI / 2, { muro: '#efe3c2', techo: '#e6e9ec', tile: 1, tipoTecho: 'dos' });
   casa(-84.5, -24, 25, 20, 3.4, 0, { techo: '#e6e9ec', tile: 0, tipoTecho: 'dos', solido: true });
   palma(-55.8, -45.2, 9);
-  fila(BX, 0, 'n', -46, 30, {});
-  fila(BX, 0, 'o', -33, 33, {});
-  fila(BX, 0, 's', -46, -4, {});
-  for (let i = 0; i < 14; i++) arbol(BX - 30 + r() * 22, -2 + r() * 26);
+
+  // -------------------------------------------------------------- CASA DE ADOBE (esquina SO del parque, cruzando la calle)
+  // Señalada por la comunidad sobre el mapa; reconstruida con una foto de Street View: muros de adobe aparente,
+  // techo de lámina oxidada de una caída con tres láminas claras, puerta de madera, dos ventanas de postigo
+  // y un letrero azul «Prohibido tirar basura en este lugar. Gracias». Profundidad y parte trasera: provisionales.
+  {
+    const cx = -40.6, cz = 60.2, W = 8.7, D = 6, H = 2.7, F = cz - D / 2; // frente hacia el norte (z menor)
+    L.adobe.push(caja(W, H, D, { uvEsc: [W / 1.6, H / 1.0] }), new THREE.Color('#ffffff'), M(cx, H / 2, cz));
+    // techo de una caída (más bajo al frente) y sus vigas
+    const rise = 1.1, run = D + 1.4, len = Math.hypot(run, rise), a = Math.atan2(rise, run);
+    L.techos.push(caja(W + 0.9, 0.06, len, { uvEsc: [(W + 0.9) * 1.2, len * 0.5] }), new THREE.Color('#9a5236'),
+      M(cx, H + rise / 2 + 0.12, cz - 0.35, PI, a));
+    for (const px of [-40.0, -41.9, -44.1]) L.lisos.push(new THREE.BoxGeometry(0.95, 0.02, len - 0.1), new THREE.Color('#e3e7e8'), M(px, H + rise / 2 + 0.17, cz - 0.35, PI, a));
+    for (let i = 0; i <= 6; i++) L.lisos.push(new THREE.BoxGeometry(0.1, 0.12, 1.1), new THREE.Color('#5a4330'), M(cx - W / 2 + 0.3 + i * (W - 0.6) / 6, H + 0.05, F - 0.35));
+    const hueco = (x, y, w, h) => {
+      L.lisos.push(new THREE.BoxGeometry(w + 0.12, h + 0.12, 0.05), new THREE.Color('#9c8467'), M(x, y, F - 0.02));
+      L.lisos.push(new THREE.BoxGeometry(w, h, 0.06), new THREE.Color('#7a5a3c'), M(x, y, F - 0.04));
+      L.lisos.push(new THREE.BoxGeometry(0.03, h, 0.07), new THREE.Color('#4b3624'), M(x, y, F - 0.05));
+    };
+    hueco(-40.8, 0.9, 0.85, 1.8);                     // puerta
+    hueco(-37.95, 1.3, 0.7, 0.72); hueco(-43.3, 1.3, 0.62, 0.7); // ventanas de postigo
+    letreroPlano('PROHIBIDO TIRAR\nBASURA EN ESTE\nLUGAR  GRACIAS', -42.0, 1.75, F - 0.04, 0.78, 0.46, PI,
+      { w: 256, h: 150, fondo: '#2f6fb0', color: '#ffffff', fuente: 'bold 30px sans-serif' });
+    // vecino al oriente: poste de concreto y muro de block sin terminar
+    L.lisos.push(new THREE.BoxGeometry(0.3, 2.9, 0.3), new THREE.Color('#b9b6ae'), M(cx + W / 2 + 0.25, 1.45, F + 0.1));
+    L.muros.push(caja(0.25, 2.0, D, { tile: 0 }), new THREE.Color('#a9a59c'), M(cx + W / 2 + 0.55, 1.0, cz));
+    losa('tierra', -46, 53.5, -33, F, 0.03, 6, null);
+    const rc = obb(cx, cz, W, D, 0); solido(rc); solido(obb(cx + W / 2 + 0.55, cz, 0.4, D, 0));
+    mapa.edificios.push({ pts: esquinas(rc), color: '#9a5236' });
+  }
 
   // letreros de calle (solo conocemos «calle central»)
   const letreroCalle = (x, z, rot) => {
@@ -461,24 +481,92 @@ export function construirPueblo(scene, renderer) {
   };
   letreroCalle(-45.6, -45.6, 0); letreroCalle(-54.4, 45.4, 0); letreroCalle(-45.6, 45.6, 0);
 
-  // -------------------------------------------------------------- RESTO DEL PUEBLO (genérico)
-  for (let i = -N; i <= N; i++) for (let j = -N; j <= N; j++) {
-    if ((i === 0 && j === 0) || (i === -1 && j === 0)) continue;
-    const bx = i * paso, bz = j * paso;
-    const borde = Math.max(Math.abs(i), Math.abs(j)) === N;
-    const prob = borde ? 0.42 : 0.7;
-    fila(bx, bz, 'n', -46, 46, { prob });
-    fila(bx, bz, 's', -46, 46, { prob });
-    fila(bx, bz, 'o', -33, 33, { prob });
-    fila(bx, bz, 'e', -33, 33, { prob });
-    const n = borde ? 26 : 16;
-    for (let k = 0; k < n; k++) arbol(bx - 30 + r() * 60, bz - 30 + r() * 60);
+  // -------------------------------------------------------------- RESTO DEL PUEBLO (sobre las calles reales)
+  // Zonas que no se llenan: parque, andador, escuela y atrio de la iglesia.
+  const zonas = [obb(-24.5, 0, 43, 92), obb(0, 0, 6, 92), obb(24.5, -16.2, 43, 59.6), obb(-59.8, 8.75, 10.5, 14.5)];
+  const ocupado = new Map(); // celdas de 20 m -> rectángulos ocupados
+  const celda = (x, z) => Math.floor(x / 20) + ',' + Math.floor(z / 20);
+  const celdasDe = (o) => {
+    const p = esquinas(o), set = new Set();
+    let x0 = Infinity, x1 = -Infinity, z0 = Infinity, z1 = -Infinity;
+    for (const [x, z] of p) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); z0 = Math.min(z0, z); z1 = Math.max(z1, z); }
+    for (let i = Math.floor(x0 / 20); i <= Math.floor(x1 / 20); i++) for (let j = Math.floor(z0 / 20); j <= Math.floor(z1 / 20); j++) set.add(i + ',' + j);
+    return set;
+  };
+  const registrar = (o) => { for (const c of celdasDe(o)) { if (!ocupado.has(c)) ocupado.set(c, []); ocupado.get(c).push(o); } };
+  colision.rects.forEach(registrar); zonas.forEach(registrar);
+  const proyecta = (pts, ax) => { let a = Infinity, b = -Infinity; for (const [x, z] of pts) { const v = x * ax[0] + z * ax[1]; if (v < a) a = v; if (v > b) b = v; } return [a, b]; };
+  const choca = (o1, o2) => {
+    const p1 = esquinas(o1), p2 = esquinas(o2);
+    for (const o of [o1, o2]) {
+      const c = Math.cos(o.rot), s = Math.sin(o.rot);
+      for (const ax of [[c, -s], [s, c]]) {
+        const [a1, b1] = proyecta(p1, ax), [a2, b2] = proyecta(p2, ax);
+        if (b1 < a2 || b2 < a1) return false;
+      }
+    }
+    return true;
+  };
+  const libre = (o) => {
+    const pts = esquinas(o);
+    for (const [x, z] of pts.concat([[o.cx, o.cz]])) if (distCalle(x, z) < 0.5 || Math.abs(x) > 560 || Math.abs(z) > 560) return false;
+    const grande = { ...o, hw: o.hw + 0.25, hd: o.hd + 0.25 };
+    const vistos = new Set();
+    for (const c of celdasDe(grande)) for (const q of ocupado.get(c) || []) {
+      if (vistos.has(q)) continue; vistos.add(q);
+      if (choca(grande, q)) return false;
+    }
+    return true;
+  };
+  const dentroCasa = (x, z, m = 1) => {
+    for (const q of ocupado.get(celda(x, z)) || []) {
+      const dx = x - q.cx, dz = z - q.cz, c = Math.cos(q.rot), s = Math.sin(q.rot);
+      if (Math.abs(dx * c - dz * s) < q.hw + m && Math.abs(dx * s + dz * c) < q.hd + m) return true;
+    }
+    return false;
+  };
+  for (const sg of SEG) {
+    const nx = -sg.dz, nz = sg.dx;
+    for (const lado of [1, -1]) {
+      let t = 1.5;
+      while (t < sg.len - 6) {
+        const w = 7 + r() * 6;
+        const mx = sg.ax + sg.dx * (t + w / 2), mz = sg.az + sg.dz * (t + w / 2);
+        const dc = Math.hypot(mx + 20, mz);
+        const prob = dc < 230 ? 0.78 : dc < 380 ? 0.55 : 0.35;
+        if (r() < prob) {
+          const d = 6 + r() * 4, s = 0.6 + r() * 1.6;
+          const off = sg.w / 2 + s + d / 2;
+          const rot = Math.atan2(-lado * nx, -lado * nz);
+          const o = obb(mx + nx * lado * off, mz + nz * lado * off, w - 0.5, d, rot);
+          if (libre(o)) {
+            const h = r() < 0.07 ? 5.6 : 2.6 + r() * 0.7;
+            casa(o.cx, o.cz, w - 0.5, d, h, rot, { tile: dc < 160 && r() < 0.18 ? 3 : undefined });
+            registrar(o);
+          }
+        } else if (r() < 0.6) {
+          const k = sg.w / 2 + 4 + r() * 4;
+          const x = mx + nx * lado * k, z = mz + nz * lado * k;
+          if (distCalle(x, z) > 2 && !dentroCasa(x, z)) arbol(x, z);
+        }
+        t += w + r() * 1.2;
+      }
+    }
   }
-  // monte y cultivos alrededor del pueblo
-  for (let k = 0; k < 520; k++) {
-    const a = r() * PI * 2, d = 270 + r() * 380;
-    if (r() < 0.35 && Math.abs(Math.cos(a)) > 0.5) continue; // claros (milpas)
-    arbol(Math.cos(a) * d, Math.sin(a) * d, { r: 3 + r() * 3.5 });
+  // huertas y solares arbolados (la vista satelital muestra mucha sombra de árboles dentro de las manzanas)
+  for (let k = 0, n = 0; k < 9000 && n < 1100; k++) {
+    const x = (r() - 0.5) * 1040, z = (r() - 0.5) * 1040;
+    if (Math.abs(x) < 47 && Math.abs(z) < 47) continue;
+    if (distCalle(x, z) < 3 || dentroCasa(x, z, 1.5)) continue;
+    if (zonas.some((q) => Math.abs(x - q.cx) < q.hw && Math.abs(z - q.cz) < q.hd)) continue;
+    arbol(x, z); n++;
+  }
+  // monte alrededor
+  for (let k = 0; k < 300; k++) {
+    const a = r() * PI * 2, d = 560 + r() * 260;
+    const x = Math.cos(a) * d, z = Math.sin(a) * d;
+    if (distCalle(x, z) < 3) continue;
+    arbol(x, z, { r: 3 + r() * 3.5 });
   }
 
   // postes de luz con cables a lo largo de las calles principales
@@ -486,7 +574,7 @@ export function construirPueblo(scene, renderer) {
     const postes = [];
     const lineas = [];
     const tramo = (x0, z0, x1, z1) => {
-      const len = Math.hypot(x1 - x0, z1 - z0), n = Math.round(len / 33);
+      const len = Math.hypot(x1 - x0, z1 - z0), n = Math.max(1, Math.round(len / 33));
       let prev = null;
       for (let i = 0; i <= n; i++) {
         const x = x0 + ((x1 - x0) * i) / n, z = z0 + ((z1 - z0) * i) / n;
@@ -500,7 +588,10 @@ export function construirPueblo(scene, renderer) {
         prev = [x, z];
       }
     };
-    tramo(-45.2, -150, -45.2, 150); tramo(-150, -54.8, 150, -54.8); tramo(-150, 45.2, 150, 45.2); tramo(54.8, -150, 54.8, 150);
+    for (const sg of SEG) if (sg.conc && sg.len > 20) {
+      const ox = -sg.dz * (sg.w / 2 + 0.35), oz = sg.dx * (sg.w / 2 + 0.35);
+      tramo(sg.ax + ox, sg.az + oz, sg.bx + ox, sg.bz + oz);
+    }
     const g = new THREE.CylinderGeometry(0.11, 0.16, 8.6, 6); g.translate(0, 4.3, 0);
     const im = new THREE.InstancedMesh(g, new THREE.MeshLambertMaterial({ color: '#a7a49c' }), postes.length);
     postes.forEach(([x, z], i) => { im.setMatrixAt(i, M(x, 0, z)); colision.circulos.push({ x, z, r: 0.2 }); });
@@ -528,6 +619,7 @@ export function construirPueblo(scene, renderer) {
   add(L.techos.mesh(MAT.techos));
   add(L.tejas.mesh(MAT.tejas));
   add(L.lisos.mesh(MAT.lisos));
+  add(L.adobe.mesh(MAT.adobe));
   const matSuelo = {
     concreto: new THREE.MeshLambertMaterial({ map: T.concreto }),
     tierra: new THREE.MeshLambertMaterial({ map: T.tierra }),
@@ -664,7 +756,8 @@ export function construirPueblo(scene, renderer) {
       const tw = a.tipo === 'ficus' ? 1.7 : 0.9 + a.rad * 0.05;
       mt.compose(V3(a.x, 0, a.z), q.identity(), V3(tw, a.h + a.rad * 0.3, tw));
       if (a.tipo === 'ficus') tF.setMatrixAt(iF++, mt); else tN.setMatrixAt(iN++, mt);
-      for (let k = 0; k < 2; k++) {
+      const nCopas = Math.hypot(a.x, a.z) < 260 ? 2 : 1;
+      for (let k = 0; k < nCopas; k++) {
         const s = k === 0 ? 1 : 0.7;
         const ox = k === 0 ? 0 : (r() - 0.5) * a.rad, oz = k === 0 ? 0 : (r() - 0.5) * a.rad;
         e.set(0, r() * PI, 0); q.setFromEuler(e);
@@ -677,6 +770,7 @@ export function construirPueblo(scene, renderer) {
       mt.compose(V3(a.x, 0.045 + (i % 7) * 0.001, a.z), q.identity(), V3(a.rad * 2.3, 1, a.rad * 2.3));
       sM.setMatrixAt(i, mt);
     });
+    cM.count = iC;
     sM.renderOrder = 2;
     scene.add(tN, tF, cM, sM);
   }

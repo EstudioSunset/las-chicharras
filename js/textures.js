@@ -110,12 +110,12 @@ export function teja() {
 }
 
 // Atlas de fachadas (4 mosaicos). El color del muro se aplica por vértice (multiplica).
-// 0: muro liso · 1: puerta + ventana · 2: ventana, puerta, ventana · 3: tienda con cortina
+// 0: muro liso · 1: puerta + ventana · 2: ventana, puerta, ventana · 3: tienda con cortina · 4: tres ventanas (planta alta)
 export function atlasFachadas() {
   const T = 256;
-  const [c, x] = lienzo(T * 4, T);
+  const [c, x] = lienzo(T * 5, T);
   const r = rng(51);
-  for (let t = 0; t < 4; t++) {
+  for (let t = 0; t < 5; t++) {
     const ox = t * T;
     x.fillStyle = '#f2efe8'; x.fillRect(ox, 0, T, T);
     // repellado
@@ -149,6 +149,9 @@ export function atlasFachadas() {
   puerta(T + 50, 40); ventana(T + 150, 56);
   // mosaico 2
   ventana(2 * T + 22, 46); puerta(2 * T + 108, 40, '#2f4f6a'); ventana(2 * T + 186, 46);
+  // mosaico 4: planta alta con tres ventanas (sin rodapié)
+  x.fillStyle = '#f2efe8'; x.fillRect(4 * T, T * 0.86, T, T * 0.14);
+  ventana(4 * T + 22, 50); ventana(4 * T + 103, 50); ventana(4 * T + 184, 50);
   // mosaico 3: tienda
   const ox = 3 * T;
   x.fillStyle = '#7d8388'; x.fillRect(ox + 40, T * 0.3, 176, T * 0.7);
@@ -157,6 +160,23 @@ export function atlasFachadas() {
   x.fillStyle = '#c23b2e'; x.fillRect(ox + 30, T * 0.16, 196, T * 0.1);
   x.fillStyle = '#fff'; x.font = 'bold 20px sans-serif'; x.textAlign = 'center';
   x.fillText('ABARROTES', ox + 128, T * 0.24);
+  return tex(c);
+}
+
+// Muro de adobe aparente: la textura cubre 1.6 m × 1.0 m (bloques de ~40 × 12 cm)
+export function adobe() {
+  const [c, x] = lienzo(256, 160);
+  x.fillStyle = '#8e7a63'; x.fillRect(0, 0, 256, 160);
+  const r = rng(71);
+  for (let j = 0; j < 8; j++) {
+    const off = (j % 2) * 32;
+    for (let i = -1; i < 5; i++) {
+      const k = 0.88 + r() * 0.22;
+      x.fillStyle = `rgb(${(196 * k) | 0},${(170 * k) | 0},${(138 * k) | 0})`;
+      x.fillRect(i * 64 + off + 2, j * 20 + 2, 60, 16);
+    }
+  }
+  ruido(x, 256, 160, 1800, ['#a88d6e', '#d2b998', '#8c7458'], [1, 3], 0.35, 72);
   return tex(c);
 }
 

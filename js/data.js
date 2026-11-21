@@ -1,5 +1,5 @@
 // Datos del pueblo: trazado, lugares e historias.
-// Sistema de coordenadas en METROS: x = este (+) / oeste (-), z = sur (+) / norte (-).
+// Sistema de coordenadas del juego (alineado con la retícula de calles): x = «oriente» (+), z = «sur» (+).
 // Origen (0,0): centro de la manzana del Parque central + Escuela "16 de Septiembre".
 // Las medidas se tomaron de las capturas satelitales de Google Maps (escala aprox.
 // calculada con el largo de los autos estacionados: ~6.7 px por metro en la captura cercana).
@@ -19,23 +19,12 @@ export const META = {
   ],
 };
 
-// Retícula de calles: ejes cada 100 m (medido en la captura amplia: ~118 px por cuadra).
-export const GRID = {
-  paso: 100,          // distancia entre ejes de calle
-  anchoCalle: 8,      // ancho de arroyo vehicular (aprox.)
-  manzanas: 2,        // manzanas a cada lado del centro (5 × 5 en total)
-};
-
-// Calles de concreto (las demás se dibujan como terracería). Provisional: se dedujo del
-// color gris claro en la imagen satelital.
-export const CALLES_CONCRETO = [
-  // { eje: 'x' => calle norte-sur en x = valor, desde..hasta en z }
-  { ns: true, en: -50, desde: -250, hasta: 250, nombre: 'Calle central' },
-  { ns: true, en: 50, desde: -150, hasta: 150 },
-  { ns: true, en: -150, desde: -50, hasta: 50 },
-  { ns: false, en: -50, desde: -150, hasta: 150 },
-  { ns: false, en: 50, desde: -150, hasta: 150 },
-];
+// Escala y orientación, confirmadas con las calles de OpenStreetMap (archivo CADMapper):
+//  - 1 unidad del juego = 0.95 m reales (las cuadras miden ~95 m de eje a eje).
+//  - La retícula del pueblo está girada ~20.6° respecto al norte real: el «arriba» del juego apunta a
+//    rumbo 20.6° (nor-noreste). Las capturas de Google Maps que se usaron estaban giradas para alinear las calles.
+export const ESCALA = 0.95;
+export const DECLINACION = 20.6;
 
 // Andador / calle angosta entre el parque y la escuela (se ve en la captura cercana).
 export const CALLE_ANGOSTA = { x: 0, ancho: 6, desde: -46, hasta: 46, provisional: true };
@@ -83,17 +72,20 @@ export const LUGARES = [
   {
     id: 'agencia',
     nombre: 'Agencia Municipal', corto: 'Agencia',
-    pos: [-56, 28],
+    pos: [-51, 27.5],
     radio: 9,
     foto: null,
     provisional: true,
     notaReconstruccion:
-      'Ubicación y techos rojizos según la imagen satelital. El portal, el letrero y los colores de la fachada son provisionales.',
+      'Confirmado por la comunidad: es la construcción blanca junto a la iglesia, que se alcanza a ver en la foto de la iglesia. ' +
+      'La altura de dos niveles, las ventanas y el letrero son provisionales hasta tener una foto de su frente.',
     documentado: [
-      { texto: 'Está marcada en Google Maps como «AGENCIA MUNICIPAL», en la misma manzana que la iglesia, hacia el sur, frente al parque.', fuente: 'Google Maps (captura enviada por la comunidad, 2026)' },
-      { texto: 'Se distingue desde el aire por sus techos color rojo-terracota, distintos de la lámina blanca de la mayoría de las casas.', fuente: 'Imagen satelital de Google Maps' },
+      { texto: 'Está marcada en Google Maps como «AGENCIA MUNICIPAL», en la misma manzana que la iglesia, justo al sur de ella, frente al parque.', fuente: 'Google Maps (captura enviada por la comunidad, 2026)' },
+      { texto: 'Es la construcción blanca que aparece a la izquierda en la foto de la iglesia.', fuente: 'Confirmado por la comunidad (2026)' },
+      { texto: 'Desde el aire sus techos se ven rojos, color típico del impermeabilizante en techos planos de concreto.', fuente: 'Imagen satelital de Google Maps' },
     ],
     recuerdos: [],
+    pendiente: '¿Desde cuándo está la Agencia en este edificio? ¿Qué había antes?',
   },
   {
     id: 'explanada',
@@ -144,6 +136,25 @@ export const LUGARES = [
     ],
     recuerdos: [],
     pendiente: '¿Esa construcción es un kiosco? ¿De qué color es? ¿Hay bancas o jardineras especiales?',
+  },
+  {
+    id: 'adobe',
+    nombre: 'La casa de adobe de la esquina', corto: 'Casa de adobe',
+    subtitulo: 'Calle central, frente a la esquina suroeste del parque',
+    pos: [-42, 52],
+    radio: 8,
+    foto: null,
+    provisional: false,
+    notaReconstruccion:
+      'Señalada por la comunidad y reconstruida con una foto de Street View (fecha por confirmar). ' +
+      'La profundidad de la casa y su parte trasera son provisionales.',
+    documentado: [
+      { texto: 'Casa de muros de adobe aparente, con techo de lámina de una sola caída, oxidada, con tres láminas claras.', fuente: 'Google Street View · señalada por la comunidad (2026)' },
+      { texto: 'Al frente tiene una puerta de madera y dos ventanas pequeñas de postigo. Junto a la puerta, un letrero azul dice «Prohibido tirar basura en este lugar. Gracias».', fuente: 'Google Street View' },
+      { texto: 'En esa foto, la calle central hacia el sur se ve de terracería, con cunetas a los lados.', fuente: 'Google Street View' },
+    ],
+    recuerdos: [],
+    pendiente: '¿De quién era esta casa y desde cuándo está? ¿Sigue en pie? ¿Ya pavimentaron la calle?',
   },
   {
     id: 'escuela',

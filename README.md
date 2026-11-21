@@ -44,6 +44,8 @@ js/world.js         construcción 3D del pueblo (calles, casas, parque, domos, e
 js/controls.js      palanca táctil, arrastre para mirar, teclado
 js/audio.js         chicharras y pasos sintetizados (sin archivos de audio)
 js/textures.js      texturas generadas en el navegador (carga inicial ligera)
+js/calles.js        calles reales (OpenStreetMap), generado desde el DXF de CADMapper
+herramientas/       convertidor DXF → calles.js
 assets/             foto histórica
 docs/               datos documentados, guía para reunir fotos y formato de autorización
 ```
@@ -60,6 +62,10 @@ recuerdos: [
 
 Si `autorizado` es `false` o no hay `autor`, el recuerdo aparece como «Un vecino de Las Chicharras». Antes de publicar cualquier nombre se usa el formato de `docs/autorizacion-testimonio.md`.
 
+## Escala y orientación
+
+Las calles de OpenStreetMap confirmaron que las cuadras miden unos 95 m y que la retícula del pueblo está girada unos 20.6° respecto al norte real. La brújula y el mapa muestran el **norte real**.
+
 ## Rendimiento
 
 - La escena completa se dibuja con **20 a 60 llamadas de dibujo** (según hacia dónde se mire) y unos 250 mil triángulos: las casas se combinan en una sola malla y los árboles usan instancias.
@@ -71,7 +77,7 @@ Si `autorizado` es `false` o no hay `autor`, el recuerdo aparece como «Un vecin
 Las prioridades están ordenadas de la más importante a la menos importante. La guía completa para pedirlas está en `docs/guia-recoleccion.md`.
 
 1. ~~Fachada de la Iglesia~~ ✅ reconstruida con foto de la comunidad. Faltan: muros laterales, la advocación (santo) y fotos antiguas.
-2. **Fachada de la Agencia Municipal**: si tiene portal, su letrero y sus colores.
+2. **Frente de la Agencia Municipal** (ya confirmamos que es la construcción blanca junto a la iglesia): ventanas, letrero, número de niveles.
 3. **Entrada de la escuela**: dónde está el portón y de qué color es la barda.
 4. **La construcción del centro de la plaza**: si es un kiosco y cómo es.
 5. **Cuatro esquinas del parque**: una foto desde cada esquina, mirando al centro.
@@ -89,7 +95,9 @@ Las prioridades están ordenadas de la más importante a la menos importante. La
 
 ## Créditos y fuentes
 
-- Trazado y techos: capturas de Google Maps aportadas por la comunidad (2026).
+- Trazado de calles: © colaboradores de [OpenStreetMap](https://www.openstreetmap.org/copyright) (ODbL), exportado con CADMapper y convertido con `herramientas/dxf_a_calles.py`.
+- Techos y edificios del centro: capturas de Google Maps aportadas por la comunidad (2026).
+- Fachada de la iglesia: foto aportada por la comunidad (2026). Casa de adobe: Google Street View, señalada por la comunidad.
 - Foto histórica: Google Street View. Su fecha está por confirmar. Se usa con atribución y se reemplazará por fotos propias de la comunidad.
 - Datos de población y de la escuela: ver `docs/datos-documentados.md` (INEGI, SEP).
 - Motor 3D: [three.js](https://threejs.org) (MIT).
