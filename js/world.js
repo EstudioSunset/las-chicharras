@@ -59,6 +59,20 @@ function caja(w, h, d, { tile = null, uvEsc = null } = {}) {
   return g;
 }
 
+// Techo a cuatro aguas: cumbrera a lo largo de x, alero `o` alrededor.
+function cuatroAguas(w, d, r, o) {
+  const X = w / 2 + o, Z = d / 2 + o, k = Math.max(0, (w - d) / 2);
+  const A = [-X, 0, -Z], B = [X, 0, -Z], C = [X, 0, Z], D = [-X, 0, Z], E = [-k, r, 0], F = [k, r, 0];
+  const tris = [D, C, F, D, F, E, B, A, E, B, E, F, A, D, E, C, B, F];
+  const pos = [], uv = [];
+  for (const v of tris) { pos.push(...v); uv.push(v[0] * 1.2, v[2] * 0.6 + v[1]); }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+  g.computeVertexNormals();
+  return g;
+}
+
 // Hastiales (triángulos) de un techo de dos aguas.
 function hastiales(w, d, r) {
   const p = [];
@@ -435,7 +449,6 @@ export function construirPueblo(scene, renderer) {
     mapa.edificios.push({ pts: esquinas(rc), color: '#b5523b' });
   }
   casa(-84.5, 28, 24, 25, 3.8, PI / 2, { muro: '#f3f2ee', techo: '#b5523b', tile: 0, tipoTecho: 'plana' });
-  casa(-64.5, 43, 19, 5.5, 3, 0, { tile: 3, techo: '#e6e9ec' });
   // tramo norte de la calle central (lado poniente): tienda de fachada verde y techo rojo + barda gris (vistas en la foto)
   casa(-58.5, -40, 9, 8, 3.4, PI / 2, { muro: '#3f9a8c', techo: '#a2503e', tile: 3, tipoTecho: 'una' });
   barda2(-55.2, -35.5, -55.2, -21, '#b5b0a6');
@@ -473,13 +486,59 @@ export function construirPueblo(scene, renderer) {
     mapa.edificios.push({ pts: esquinas(rc), color: '#9a5236' });
   }
 
+  // -------------------------------------------------------------- CRUCE CALLE CENTRAL × CALLE AL SUR DEL PARQUE
+  // Reconstruido con una foto de Street View tomada en el cruce mirando al poniente (c. 2015, señalada por la comunidad).
+  {
+    const OX = new THREE.Color('#9a5a3a');
+    // Esquina noroeste: casa blanca con techo de lámina oxidada a cuatro aguas; ventana hacia la calle central.
+    {
+      const cx = -63.5, cz = 43.6, W = 8, D = 5, H = 2.8;
+      L.muros.push(caja(W, H, D, { tile: 0 }), new THREE.Color('#f4f2ec'), M(cx, H / 2, cz));
+      L.techos.push(cuatroAguas(W, D, 1.3, 0.45), OX, M(cx, H, cz));
+      L.lisos.push(new THREE.BoxGeometry(0.06, 0.8, 1.1), new THREE.Color('#2a2622'), M(cx + W / 2 + 0.03, 1.55, cz - 0.2));
+      L.lisos.push(new THREE.BoxGeometry(0.1, 0.06, 1.2), new THREE.Color('#d9d3c6'), M(cx + W / 2 + 0.05, 1.12, cz - 0.2));
+      const rc = obb(cx, cz, W, D, 0); solido(rc); mapa.edificios.push({ pts: esquinas(rc), color: '#9a5a3a' });
+      // explanada de concreto entre la casa y la calle central (donde se para la gente en la foto)
+      losa('concreto', -59.5, 38.2, -54.2, 46.3, 0.03, 6, '#d9d4ca');
+    }
+    // Junto a ella, hacia el norte: construcción amarilla con rodapié rojo y techo de lámina roja (provisional).
+    {
+      const cx = -57.6, cz = 39.5, W = 3.0, D = 4.2, H = 2.5;
+      L.muros.push(caja(W, H, D, { tile: 0 }), new THREE.Color('#f0c54c'), M(cx, H / 2, cz, PI / 2));
+      L.lisos.push(new THREE.BoxGeometry(D + 0.02, 0.45, W + 0.02), new THREE.Color('#b3362b'), M(cx, 0.22, cz));
+      L.techos.push(caja(W + 0.6, 0.06, D + 1, { uvEsc: [(W + 0.6) * 1.2, 2] }), new THREE.Color('#a8402f'), M(cx, H + 0.3, cz, PI / 2, 0.12));
+      const rc = obb(cx, cz, W, D, PI / 2); solido(rc); mapa.edificios.push({ pts: esquinas(rc), color: '#a8402f' });
+    }
+    // Esquina suroeste: casa de block sin enjarre, techo plano de lámina; puerta hacia la calle central y tejaban al poniente.
+    {
+      const cx = -61.8, cz = 58.6, W = 8.5, D = 6, H = 2.7, BK = new THREE.Color('#c7a48c');
+      L.adobe.push(caja(W, H, D, { uvEsc: [W / 1.6, H / 1.0] }), BK, M(cx, H / 2, cz));
+      for (const [x, z] of [[cx - W / 2, cz - D / 2], [cx + W / 2, cz - D / 2], [cx + W / 2, cz + D / 2]])
+        L.lisos.push(new THREE.BoxGeometry(0.3, H + 0.05, 0.3), new THREE.Color('#b7b2a8'), M(x, H / 2, z));
+      L.techos.push(caja(W + 0.5, 0.05, D + 0.5, { uvEsc: [(W + 0.5) * 1.2, 3] }), new THREE.Color('#c9cdd0'), M(cx, H + 0.08, cz, 0, 0.03));
+      L.lisos.push(new THREE.BoxGeometry(0.06, 2.0, 0.9), new THREE.Color('#b5532e'), M(cx + W / 2 + 0.03, 1.0, cz + 1.2)); // puerta
+      L.lisos.push(new THREE.BoxGeometry(0.06, 0.6, 0.6), new THREE.Color('#2a2622'), M(cx + W / 2 + 0.03, 1.5, cz - 1.5)); // ventanita
+      losa('concreto', cx + W / 2, cz - 1.8, cx + W / 2 + 2.6, cz + 2.4, 0.06, 6, null); // banqueta frente a la puerta
+      // tejaban de madera
+      for (const [x, z] of [[cx - W / 2 - 6, cz - 2.6], [cx - W / 2 - 6, cz + 2.6], [cx - W / 2 - 3, cz - 2.6]]) {
+        L.lisos.push(new THREE.BoxGeometry(0.15, 2.4, 0.15), new THREE.Color('#7d6a55'), M(x, 1.2, z));
+        colision.circulos.push({ x, z, r: 0.2 });
+      }
+      L.techos.push(caja(6.6, 0.05, 6, { uvEsc: [8, 3] }), new THREE.Color('#9fa4a8'), M(cx - W / 2 - 3, 2.45, cz, 0, -0.06));
+      const rc = obb(cx, cz, W, D, 0); solido(rc); mapa.edificios.push({ pts: esquinas(rc), color: '#c9cdd0' });
+    }
+    // registro (tapa redonda) en el cruce, como en la foto
+    L.lisos.push(new THREE.CylinderGeometry(0.42, 0.42, 0.04, 16), new THREE.Color('#77736b'), M(-50.5, 0.03, 52.3));
+    L.lisos.push(new THREE.CylinderGeometry(0.62, 0.62, 0.03, 16), new THREE.Color('#bdb8ae'), M(-50.5, 0.025, 52.3));
+  }
+
   // letreros de calle (solo conocemos «calle central»)
   const letreroCalle = (x, z, rot) => {
     L.lisos.push(new THREE.CylinderGeometry(0.05, 0.05, 2.8, 6), new THREE.Color('#5a5f63'), M(x, 1.4, z));
     letreroPlano('CALLE CENTRAL', x, 2.65, z, 1.6, 0.35, rot, { fondo: '#1d4f91', fuente: 'bold 52px sans-serif', borde: '#ffffff', h: 110 });
     letreroPlano('CALLE CENTRAL', x, 2.65, z, 1.6, 0.35, rot + PI, { fondo: '#1d4f91', fuente: 'bold 52px sans-serif', borde: '#ffffff', h: 110 });
   };
-  letreroCalle(-45.6, -45.6, 0); letreroCalle(-54.4, 45.4, 0); letreroCalle(-45.6, 45.6, 0);
+  letreroCalle(-45.6, -45.6, 0); letreroCalle(-45.6, 45.6, 0);
 
   // -------------------------------------------------------------- RESTO DEL PUEBLO (sobre las calles reales)
   // Zonas que no se llenan: parque, andador, escuela y atrio de la iglesia.
@@ -605,10 +664,11 @@ export function construirPueblo(scene, renderer) {
   vehiculo('auto', '#b3262a', -27, -48.3, PI / 2, eras.ahora);
   vehiculo('auto', '#e9e9e6', -43.8, -35, 0, eras.ahora);
   vehiculo('auto', '#e1e3e4', -43.8, -26, PI, eras.ahora);
-  // ANTES (Street View, c. 2015): la calle frente a la casa de adobe era de terracería; hoy es de concreto
-  // (confirmado por la comunidad, 2026). Solo se cubre el tramo que se ve en la foto.
-  {
-    const x0 = -54, x1 = -22, z0 = 46.3, z1 = 53.6;
+  // ANTES (Street View, c. 2015): la calle al sur del parque era de terracería a ambos lados del cruce con la
+  // calle central; el cruce mismo ya era de concreto (con tapa de registro). Hoy, frente a la casa de adobe, es de
+  // concreto (confirmado por la comunidad, 2026); hacia el poniente, por confirmar.
+  for (const [x0, x1] of [[-146, -54], [-46, -22]]) {
+    const z0 = 46.3, z1 = 53.6;
     const g = new THREE.PlaneGeometry(x1 - x0, z1 - z0).rotateX(-PI / 2).translate((x0 + x1) / 2, 0.04, (z0 + z1) / 2);
     const p = g.attributes.position, uv = g.attributes.uv;
     for (let i = 0; i < p.count; i++) uv.setXY(i, p.getX(i) / 6, -p.getZ(i) / 6);
