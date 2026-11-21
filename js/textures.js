@@ -192,6 +192,23 @@ export function rombos() {
   return tex(c);
 }
 
+// Block de concreto sin enjarre: la textura cubre 1.6 m × 0.8 m (blocks de 40 × 20 cm)
+export function block() {
+  const [c, x] = lienzo(256, 128);
+  x.fillStyle = '#7f7c76'; x.fillRect(0, 0, 256, 128);
+  const r = rng(91);
+  for (let j = 0; j < 4; j++) {
+    const off = (j % 2) * 32;
+    for (let i = -1; i < 5; i++) {
+      const k = 0.9 + r() * 0.16;
+      x.fillStyle = `rgb(${(168 * k) | 0},${(165 * k) | 0},${(158 * k) | 0})`;
+      x.fillRect(i * 64 + off + 2, j * 32 + 2, 60, 28);
+    }
+  }
+  ruido(x, 256, 128, 1500, ['#8e8b84', '#b9b6ae', '#77746e'], [1, 3], 0.35, 92);
+  return tex(c);
+}
+
 export function cancha() {
   const [c, x] = lienzo(256, 512);
   x.fillStyle = '#8f9a8a'; x.fillRect(0, 0, 256, 512);

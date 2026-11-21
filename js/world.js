@@ -94,7 +94,7 @@ export function construirPueblo(scene, renderer) {
   const r = TX.rng(2026);
   const T = {
     concreto: TX.concreto(), tierra: TX.tierra(), pasto: TX.pasto(), plaza: TX.plaza(),
-    lamina: TX.lamina(), teja: TX.teja(), adobe: TX.adobe(), atlas: TX.atlasFachadas(), cancha: TX.cancha(), sombra: TX.sombra(),
+    lamina: TX.lamina(), teja: TX.teja(), adobe: TX.adobe(), block: TX.block(), atlas: TX.atlasFachadas(), cancha: TX.cancha(), sombra: TX.sombra(),
   };
   const aniso = Math.min(4, renderer.capabilities.getMaxAnisotropy());
   Object.values(T).forEach((t) => (t.anisotropy = aniso));
@@ -105,8 +105,9 @@ export function construirPueblo(scene, renderer) {
     tejas: new THREE.MeshLambertMaterial({ map: T.teja, vertexColors: true, side: THREE.DoubleSide }),
     lisos: new THREE.MeshLambertMaterial({ vertexColors: true }),
     adobe: new THREE.MeshLambertMaterial({ map: T.adobe, vertexColors: true }),
+    block: new THREE.MeshLambertMaterial({ map: T.block, vertexColors: true }),
   };
-  const L = { muros: new Lote(), techos: new Lote(), tejas: new Lote(), lisos: new Lote(), adobe: new Lote() };
+  const L = { muros: new Lote(), techos: new Lote(), tejas: new Lote(), lisos: new Lote(), adobe: new Lote(), block: new Lote() };
 
   const colision = { rects: [], circulos: [] };
   const mapa = { suelos: [], edificios: [], arboles: [] };
@@ -449,12 +450,53 @@ export function construirPueblo(scene, renderer) {
     mapa.edificios.push({ pts: esquinas(rc), color: '#b5523b' });
   }
   casa(-84.5, 28, 24, 25, 3.8, PI / 2, { muro: '#f3f2ee', techo: '#b5523b', tile: 0, tipoTecho: 'plana' });
-  // tramo norte de la calle central (lado poniente): tienda de fachada verde y techo rojo + barda gris (vistas en la foto)
-  casa(-58.5, -40, 9, 8, 3.4, PI / 2, { muro: '#3f9a8c', techo: '#a2503e', tile: 3, tipoTecho: 'una' });
-  barda2(-55.2, -35.5, -55.2, -21, '#b5b0a6');
+  // Esquina NE de la manzana (calle principal × calle central): barda de block de concreto a medio construir,
+  // con celosía arriba, portón de herrería, huecos, una pinta y una banca amarilla (Street View c. 2015,
+  // señalada por la comunidad). Detrás, árboles; más al sur, la tienda de fachada verde y techo rojo (foto de los ficus).
+  {
+    const BL = new THREE.Color('#ffffff'), Y = 2.45, zc = -44.8, xc = -54.6, xw = -72, zs = -27;
+    const muro = (x0, x1, y0, y1, z) => L.block.push(caja(x1 - x0, y1 - y0, 0.2, { uvEsc: [(x1 - x0) / 1.6, (y1 - y0) / 0.8] }), BL, M((x0 + x1) / 2, (y0 + y1) / 2, z));
+    // tramo sobre la calle principal (de oriente a poniente), con huecos
+    muro(-57.0, xc, 0, Y, zc);            // junto a la esquina
+    muro(-59.2, -57.0, 0, 1.15, zc); muro(-59.2, -57.0, 1.95, Y, zc); // hueco grande (se ve vegetación)
+    muro(-64.0, -59.2, 0, Y, zc);
+    muro(-67.2, -64.0, 2.15, Y, zc);      // vano del portón
+    muro(-69.0, -67.2, 0, Y, zc);
+    muro(-70.4, -69.0, 0, 1.0, zc); muro(-70.4, -69.0, 1.8, Y, zc); // ventana con marco rojizo
+    muro(xw, -70.4, 0, Y, zc);
+    const box = (w, h, d, col, x, y, z) => L.lisos.push(new THREE.BoxGeometry(w, h, d), new THREE.Color(col), M(x, y, z));
+    box(1.48, 0.06, 0.24, '#9b4b35', -69.7, 1.0, zc); box(1.48, 0.06, 0.24, '#9b4b35', -69.7, 1.8, zc);
+    for (let x = -67.05; x < -64.1; x += 0.22) box(0.035, 2.1, 0.035, '#2a2a28', x, 1.05, zc); // portón
+    box(3.2, 0.06, 0.05, '#2a2a28', -65.6, 2.08, zc); box(3.2, 0.05, 0.05, '#2a2a28', -65.6, 1.0, zc);
+    // celosía (hilada de block decorativo) cerca de la parte alta
+    box(xc - xw, 0.2, 0.22, '#b3b0a8', (xc + xw) / 2, 2.15, zc);
+    for (let x = xw + 0.2; x < xc; x += 0.4) box(0.14, 0.1, 0.24, '#5f5c56', x, 2.15, zc);
+    // pilastra de la esquina, un poco más alta, con letrero blanco
+    box(0.6, 2.9, 0.6, '#a3a099', xc - 0.1, 1.45, zc);
+    box(0.04, 0.45, 0.55, '#f2f2ef', xc + 0.22, 1.7, zc + 0.6);
+    // pinta blanca con letras rojas (anuncio) y banca amarilla
+    box(1.9, 1.2, 0.03, '#f1efe9', -62.4, 1.35, zc - 0.12);
+    for (const [y, w] of [[1.7, 1.5], [1.5, 1.2], [1.3, 1.4], [1.1, 0.9]]) box(w, 0.08, 0.035, y > 1.4 ? '#c8352d' : '#3b5b9a', -62.4, y, zc - 0.13);
+    box(2.2, 0.1, 0.45, '#e2c22d', -58.1, 0.45, zc - 0.5);
+    for (const x of [-59.0, -57.2]) box(0.12, 0.42, 0.35, '#e2c22d', x, 0.21, zc - 0.5);
+    colision.circulos.push({ x: -58.1, z: zc - 0.5, r: 0.5 });
+    // tramo sobre la calle central (hacia el sur), con pintas
+    L.block.push(caja(0.2, Y, zs - zc, { uvEsc: [(zs - zc) / 1.6, Y / 0.8] }), BL, M(xc, Y / 2, (zc + zs) / 2));
+    box(0.22, 0.2, zs - zc, '#b3b0a8', xc, 2.15, (zc + zs) / 2);
+    for (const [z, c] of [[-41, '#2f5aa8'], [-36.5, '#f1efe9'], [-31, '#c8352d']]) box(0.03, 0.9, 1.8, c, xc + 0.12, 1.2, z);
+    solido({ x0: xw, x1: xc + 0.1, z0: zc - 0.15, z1: zc + 0.15 });
+    solido({ x0: xc - 0.15, x1: xc + 0.15, z0: zc, z1: zs });
+    mapa.edificios.push({ x0: xw, x1: xc, z0: zc - 0.2, z1: zc + 0.2, color: '#8f8c85' });
+    mapa.edificios.push({ x0: xc - 0.2, x1: xc + 0.2, z0: zc, z1: zs, color: '#8f8c85' });
+    // árboles detrás de la barda (uno grande y ralo junto a la esquina) y palma al poniente
+    arbol(-59.5, -41.5, { r: 5.2, h: 4.2, color: '#6f8c43' });
+    arbol(-66, -38.5, { r: 4.0, h: 3.6, color: '#5d7f37' });
+    arbol(-70.5, -33, { r: 3.6, color: '#4c7a31' });
+    palma(-73.5, -44, 10);
+  }
+  casa(-58.6, -23, 8, 8, 3.4, PI / 2, { muro: '#3f9a8c', techo: '#a2503e', tile: 3, tipoTecho: 'una' });
   casa(-65.2, -8, 18, 20, 3.3, PI / 2, { muro: '#efe3c2', techo: '#e6e9ec', tile: 1, tipoTecho: 'dos' });
   casa(-84.5, -24, 25, 20, 3.4, 0, { techo: '#e6e9ec', tile: 0, tipoTecho: 'dos', solido: true });
-  palma(-55.8, -45.2, 9);
 
   // -------------------------------------------------------------- CASA DE ADOBE (esquina SO del parque, cruzando la calle)
   // Señalada por la comunidad sobre el mapa; reconstruida con una foto de Street View: muros de adobe aparente,
@@ -550,6 +592,10 @@ export function construirPueblo(scene, renderer) {
         else box(0.06, 0.6, 0.5, '#2a3236', x1 + 0.03, 1.55, z);
       }
       box(0.06, 0.3, 0.25, '#4a4a46', cx + 1.5, 1.8, z1 + 0.03); // medidor
+      // fachada a la calle principal: «RASPA RICO», letrero pequeño y puerta verde (Street View)
+      letreroPlano('RASPA RICO', -59.2, 2.35, z1 + 0.02, 2.6, 0.42, 0, { fondo: '#a6cfd8', color: '#26343a', fuente: 'bold 64px sans-serif', h: 104 });
+      letreroPlano('Jugos y licuados', -57.6, 1.75, z1 + 0.02, 1.2, 0.3, 0, { fondo: '#a6cfd8', color: '#26343a', fuente: 'italic 40px sans-serif', w: 384, h: 96 });
+      box(1.0, 2.1, 0.06, '#3e6b4f', -56.3, 1.05, z1 + 0.03); box(1.1, 0.08, 0.07, '#8d8a80', -56.3, 2.12, z1 + 0.04);
       // pretil con rombos (sur y oriente)
       const pret = (len, x, z, rot) => {
         const t = TX.rombos(); t.repeat.set(len / 1.8, 1);
@@ -594,7 +640,7 @@ export function construirPueblo(scene, renderer) {
 
   // -------------------------------------------------------------- RESTO DEL PUEBLO (sobre las calles reales)
   // Zonas que no se llenan: parque, andador, escuela y atrio de la iglesia.
-  const zonas = [obb(-24.5, 0, 43, 92), obb(0, 0, 6, 92), obb(24.5, -16.2, 43, 59.6), obb(-59.8, 8.75, 10.5, 14.5)];
+  const zonas = [obb(-24.5, 0, 43, 92), obb(0, 0, 6, 92), obb(24.5, -16.2, 43, 59.6), obb(-59.8, 8.75, 10.5, 14.5), obb(-63.3, -35.9, 17.4, 17.8)];
   const ocupado = new Map(); // celdas de 20 m -> rectángulos ocupados
   const celda = (x, z) => Math.floor(x / 20) + ',' + Math.floor(z / 20);
   const celdasDe = (o) => {
@@ -741,6 +787,7 @@ export function construirPueblo(scene, renderer) {
   add(L.tejas.mesh(MAT.tejas));
   add(L.lisos.mesh(MAT.lisos));
   add(L.adobe.mesh(MAT.adobe));
+  add(L.block.mesh(MAT.block));
   const matSuelo = {
     concreto: new THREE.MeshLambertMaterial({ map: T.concreto }),
     tierra: new THREE.MeshLambertMaterial({ map: T.tierra }),
