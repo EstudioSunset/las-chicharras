@@ -1,5 +1,7 @@
 # Las Chicharras, antes y ahora
 
+**Jugar:** https://estudiosunset.github.io/las-chicharras/
+
 Recorrido 3D para celular del pueblo de **Las Chicharras, municipio de Bella Vista, Chiapas**. El visitante abre un enlace, camina por las calles, reconoce los lugares y conoce las historias de quienes vivieron ahí. Funciona en el navegador y no hay que instalar ninguna aplicación.
 
 > **Prototipo 0.1.** La reconstrucción se basa en capturas satelitales de Google Maps y en una imagen de Street View. Todo lo que no se ve con claridad en esas referencias está marcado como **provisional** dentro del juego.
@@ -60,7 +62,7 @@ Si `autorizado` es `false` o no hay `autor`, el recuerdo aparece como «Un vecin
 
 ## Rendimiento
 
-- La escena completa se dibuja con unas **20 llamadas de dibujo** y unos 250 mil triángulos: las casas se combinan en una sola malla y los árboles usan instancias.
+- La escena completa se dibuja con **20 a 60 llamadas de dibujo** (según hacia dónde se mire) y unos 250 mil triángulos: las casas se combinan en una sola malla y los árboles usan instancias.
 - No se descargan modelos ni texturas, porque todo se genera en el navegador. Solo se descarga three.js desde un CDN, unos 170 KB comprimido.
 - La resolución baja sola si el teléfono no alcanza unos 30 cuadros por segundo.
 
