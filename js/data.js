@@ -153,7 +153,7 @@ export const LUGARES = [
       { texto: 'Al frente tiene una puerta de madera y dos ventanas pequeñas de postigo. Junto a la puerta, un letrero azul dice «Prohibido tirar basura en este lugar. Gracias».', fuente: 'Google Street View' },
       { texto: 'En esa foto, la calle de enfrente (al sur del parque) todavía era de terracería. Hoy es de concreto: toca «Antes / Ahora» aquí para comparar.', fuente: 'Google Street View · confirmado por la comunidad (2026)' },
       { texto: 'En la misma foto, la calle central hacia el sur se ve de terracería, con cunetas a los lados.', fuente: 'Google Street View' },
-      { texto: 'Desde el cruce, mirando al poniente, la calle también era de terracería. En la esquina de enfrente hay una casa blanca con techo de lámina oxidada a cuatro aguas, y del otro lado una casa de block sin enjarre con un tejabán de madera.', fuente: 'Google Street View (c. 2015) · señalada por la comunidad (2026)' },
+      { texto: 'Desde el cruce, mirando al poniente, la calle también era de terracería; hoy también es de concreto (confirmado por la comunidad, 2026). En la esquina de enfrente hay una casa blanca con techo de lámina oxidada a cuatro aguas, y del otro lado una casa de block sin enjarre con un tejabán de madera.', fuente: 'Google Street View (c. 2015) · señalada por la comunidad (2026)' },
     ],
     recuerdos: [],
     antesAhora: true,

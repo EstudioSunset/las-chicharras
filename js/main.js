@@ -337,7 +337,7 @@ function cambiarEra(e) {
   ins.hidden = e !== 'antes';
   ins.textContent = FOTO_ANTES.etiqueta;
   if (e === 'antes') {
-    if (jugador.z > 40 && jugador.z < 66 && jugador.x > -75 && jugador.x < -25) aviso('Vista histórica (Street View, c. 2015): la calle al sur del parque todavía era de terracería a los dos lados del cruce; el cruce con la calle central ya era de concreto.', 5600);
+    if (jugador.z > 40 && jugador.z < 66 && jugador.x > -75 && jugador.x < -25) aviso('Vista histórica (Street View, c. 2015): la calle al sur del parque todavía era de terracería a los dos lados del cruce; solo el cruce con la calle central era de concreto. Hoy toda es de concreto.', 5600);
     else if (!cerca()) aviso('En este punto todavía no hay referencias del pasado. Hay comparaciones en la esquina noroeste del parque («La esquina de los ficus») y frente a la casa de adobe.', 5200);
     else aviso('Vista histórica: camionetas sobre la explanada de tierra, como en la foto. Lo demás se conserva igual hasta tener más referencias.');
   } else salirComparacion();

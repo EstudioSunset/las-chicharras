@@ -666,7 +666,7 @@ export function construirPueblo(scene, renderer) {
   vehiculo('auto', '#e1e3e4', -43.8, -26, PI, eras.ahora);
   // ANTES (Street View, c. 2015): la calle al sur del parque era de terracería a ambos lados del cruce con la
   // calle central; el cruce mismo ya era de concreto (con tapa de registro). Hoy, frente a la casa de adobe, es de
-  // concreto (confirmado por la comunidad, 2026); hacia el poniente, por confirmar.
+  // concreto en los dos tramos (confirmado por la comunidad, 2026).
   for (const [x0, x1] of [[-146, -54], [-46, -22]]) {
     const z0 = 46.3, z1 = 53.6;
     const g = new THREE.PlaneGeometry(x1 - x0, z1 - z0).rotateX(-PI / 2).translate((x0 + x1) / 2, 0.04, (z0 + z1) / 2);
