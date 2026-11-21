@@ -64,18 +64,21 @@ export const LUGARES = [
   {
     id: 'iglesia',
     nombre: 'Iglesia católica', corto: 'Iglesia',
-    pos: [-60, 9.5],
-    radio: 9,
-    foto: null,
-    provisional: true,
+    pos: [-52, 9.4],
+    radio: 8,
+    foto: { src: 'assets/iglesia-fachada.webp', credito: 'Foto aportada por la comunidad (2026). El cielo parece retocado digitalmente; para el modelo solo se usó el edificio.' },
+    provisional: false,
     notaReconstruccion:
-      'La ubicación, el tamaño de la nave y el atrio salen de la imagen satelital. ' +
-      'La fachada, la torre y los colores son provisionales: todavía no tenemos una foto del frente.',
+      'La fachada, la espadaña, los colores y la reja salen de la foto de la comunidad. Las medidas se calcularon con el ancho de la nave visto desde el satélite (unos 10 m). ' +
+      'Siguen siendo aproximados el color de los muros laterales y la profundidad del atrio.',
     documentado: [
       { texto: 'Está marcada en Google Maps como «Iglesia católica», del lado poniente de la calle central, frente al Parque central.', fuente: 'Google Maps (captura enviada por la comunidad, 2026)' },
-      { texto: 'Desde arriba se ve una nave alargada con techo de lámina gris, orientada de poniente a oriente, con un pequeño atrio con pasto hacia la calle central.', fuente: 'Imagen satelital de Google Maps' },
+      { texto: 'Su fachada es amarilla, con molduras azules y cuatro pilastras blancas con anillos azules. Arriba tiene una espadaña con tres arcos para las campanas y una cruz blanca; al centro, un óculo redondo sobre la puerta en arco.', fuente: 'Foto aportada por la comunidad (2026)' },
+      { texto: 'Al frente tiene un atrio cerrado por una barda baja blanca con barandal y un portón azul con un diseño de rayos de sol.', fuente: 'Foto aportada por la comunidad (2026)' },
+      { texto: 'Desde arriba se ve una nave alargada con techo de lámina gris, orientada de poniente a oriente.', fuente: 'Imagen satelital de Google Maps' },
     ],
     recuerdos: [],
+    pendiente: '¿A qué santo está dedicada y cuándo es su fiesta? ¿Siempre ha sido amarilla? ¿Hay fotos de cómo era antes?',
   },
   {
     id: 'agencia',

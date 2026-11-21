@@ -29,7 +29,7 @@ scene.fog = new THREE.Fog('#c9d8e2', 70, 560);
 }
 scene.add(new THREE.HemisphereLight('#dfeaf5', '#7a6a4c', 1.5));
 const sol = new THREE.DirectionalLight('#fff2dc', 2.1);
-sol.position.set(-120, 200, 80);
+sol.position.set(130, 190, 70); // sol de la mañana, desde el oriente
 scene.add(sol);
 
 const camera = new THREE.PerspectiveCamera(70, innerWidth / innerHeight, 0.3, 3200);
@@ -264,7 +264,7 @@ $('#mapa-grande .cerrar').addEventListener('click', cerrarMapa);
 
 // ------------------------------------------------------------------ panel de historia
 function abrirLugar(l) {
-  const foto = l.foto === 'FOTO_ANTES' ? FOTO_ANTES : null;
+  const foto = l.foto === 'FOTO_ANTES' ? FOTO_ANTES : l.foto;
   const esc = (t) => t.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   let h = `<h2>${esc(l.nombre)}</h2>`;
   if (l.subtitulo) h += `<p class="sub">${esc(l.subtitulo)}</p>`;

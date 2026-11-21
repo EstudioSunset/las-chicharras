@@ -70,7 +70,7 @@ Si `autorizado` es `false` o no hay `autor`, el recuerdo aparece como «Un vecin
 
 Las prioridades están ordenadas de la más importante a la menos importante. La guía completa para pedirlas está en `docs/guia-recoleccion.md`.
 
-1. **Fachada de la Iglesia** (frente, torre y colores). Hoy es una aproximación.
+1. ~~Fachada de la Iglesia~~ ✅ reconstruida con foto de la comunidad. Faltan: muros laterales, la advocación (santo) y fotos antiguas.
 2. **Fachada de la Agencia Municipal**: si tiene portal, su letrero y sus colores.
 3. **Entrada de la escuela**: dónde está el portón y de qué color es la barda.
 4. **La construcción del centro de la plaza**: si es un kiosco y cómo es.

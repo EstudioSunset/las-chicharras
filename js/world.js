@@ -349,26 +349,83 @@ export function construirPueblo(scene, renderer) {
 
   // -------------------------------------------------------------- MANZANA DE LA IGLESIA Y LA AGENCIA (x -150..-50)
   const BX = -100;
-  // Iglesia: nave de poniente a oriente, techo de lámina gris
-  casa(-81.6, 9.4, 20, 11, 6, 0, { muro: '#f5f3ee', techo: '#a9adb1', tile: 0, tipoTecho: 'dos', techoMapa: '8e9296' });
+  // Iglesia: nave de poniente a oriente, techo de lámina gris (satélite).
+  // Fachada reconstruida con la foto aportada por la comunidad (2026): amarilla con molduras azules,
+  // cuatro pilastras blancas con anillos azules, espadaña de tres arcos, óculo, puerta en arco
+  // y reja blanca con portón azul de diseño de sol.
+  casa(-81.6, 9.4, 20, 11, 6, 0, { muro: '#efc53a', techo: '#a9adb1', tile: 0, tipoTecho: 'dos', techoMapa: '8e9296' });
   {
-    // frontispicio con espadaña (provisional)
-    const fx = -68.3, fz = 9.4;
-    L.muros.push(caja(6.8, 9.5, 7.2, { tile: 0 }), new THREE.Color('#f7f5f0'), M(fx, 4.75, fz, PI / 2));
-    L.muros.push(caja(3.6, 2.6, 0.8, { tile: 0 }), new THREE.Color('#f7f5f0'), M(fx + 1.5, 10.8, fz, PI / 2));
-    L.lisos.push(new THREE.BoxGeometry(0.1, 1.4, 1.2), new THREE.Color('#2b2522'), M(fx + 1.95, 10.8, fz)); // vano de campana
-    L.lisos.push(new THREE.BoxGeometry(0.15, 1.6, 0.15), new THREE.Color('#cfc6b4'), M(fx + 1.5, 12.9, fz));
-    L.lisos.push(new THREE.BoxGeometry(0.15, 0.15, 0.9), new THREE.Color('#cfc6b4'), M(fx + 1.5, 13.2, fz));
-    L.lisos.push(new THREE.BoxGeometry(0.1, 3.4, 2.2), new THREE.Color('#5b3a26'), M(fx + 3.63, 1.7, fz)); // puerta
-    L.lisos.push(new THREE.CylinderGeometry(1.1, 1.1, 0.1, 12, 1, false, 0, PI), new THREE.Color('#5b3a26'), M(fx + 3.63, 3.4, fz, 0, 0, PI / 2));
-    L.lisos.push(new THREE.CircleGeometry(0.6, 12), new THREE.Color('#6a87a6'), M(fx + 3.63, 6.6, fz, PI / 2)); // óculo
-    solido({ x0: fx - 3.6, x1: fx + 3.6, z0: fz - 3.4, z1: fz + 3.4 });
-    mapa.edificios.push({ x0: fx - 3.4, x1: fx + 3.4, z0: fz - 3.6, z1: fz + 3.6, color: '#d9d6cf' });
-    // atrio con pasto y barda baja
+    const F = -65, Z = 9.4; // plano de la fachada (mira al oriente) y su eje
+    const AM = new THREE.Color('#ffd52e'), AZ = new THREE.Color('#4a9ad4'), BL = new THREE.Color('#eef0ee'), OS = new THREE.Color('#231f1d');
+    const enFachada = (geo, col, y, z, sale = 0.02) => L.lisos.push(geo, col, M(F + sale, y, z));
+    const arco = (y, z, r, col, sale) => L.lisos.push(new THREE.CylinderGeometry(r, r, 0.06, 14, 1, false, 0, PI), col, M(F + sale, y, z, 0, 0, PI / 2));
+    // cuerpo de la fachada y espadaña
+    L.lisos.push(new THREE.BoxGeometry(6.6, 8, 10), AM, M(F - 3.3, 4, Z));
+    L.lisos.push(new THREE.BoxGeometry(0.8, 3.0, 3.4), AM, M(F - 0.4, 9.5, Z));
+    // molduras azules
+    enFachada(new THREE.BoxGeometry(0.4, 0.3, 10.4), AZ, 8.0, Z, 0.1);
+    enFachada(new THREE.BoxGeometry(1.1, 0.25, 3.8), AZ, 11.1, Z, -0.35);
+    for (const s of [-1, 1]) enFachada(new THREE.BoxGeometry(0.2, 0.16, 2.3), AZ, 4.95, Z + s * 3.9, 0.08);
+    // pilastras blancas con anillos azules (sobresalen por encima de la cornisa)
+    for (const dz of [-2.8, -1.75, 1.75, 2.8]) {
+      enFachada(new THREE.CylinderGeometry(0.22, 0.24, 9.3, 10), BL, 4.65, Z + dz, 0.3);
+      for (const [y, r, h] of [[0.15, 0.32, 0.3], [3.6, 0.29, 0.22], [6.5, 0.29, 0.22], [9.35, 0.33, 0.35]])
+        enFachada(new THREE.CylinderGeometry(r, r, h, 10), AZ, y, Z + dz, 0.3);
+    }
+    // espadaña: tres arcos para campanas y cruz
+    for (const dz of [-0.95, 0, 0.95]) {
+      enFachada(new THREE.BoxGeometry(0.06, 0.95, 0.56), OS, 9.25, Z + dz);
+      arco(9.72, Z + dz, 0.28, OS, 0.02);
+      enFachada(new THREE.BoxGeometry(0.1, 0.07, 0.7), AZ, 8.75, Z + dz, 0.05);
+    }
+    enFachada(new THREE.BoxGeometry(0.4, 0.4, 0.7), AM, 11.45, Z, -0.4);
+    enFachada(new THREE.BoxGeometry(0.14, 1.5, 0.14), BL, 12.4, Z, -0.4);
+    enFachada(new THREE.BoxGeometry(0.14, 0.14, 0.95), BL, 12.75, Z, -0.4);
+    enFachada(new THREE.BoxGeometry(0.18, 0.28, 0.28), AZ, 12.75, Z, -0.4);
+    // óculo, escudo y puerta en arco
+    enFachada(new THREE.CircleGeometry(0.55, 18).rotateY(PI / 2), OS, 5.1, Z, 0.03);
+    enFachada(new THREE.TorusGeometry(0.6, 0.07, 6, 18).rotateY(PI / 2), AZ, 5.1, Z, 0.05);
+    enFachada(new THREE.BoxGeometry(0.05, 1.2, 1.15), BL, 3.8, Z, 0.03);
+    enFachada(new THREE.CircleGeometry(0.42, 16).rotateY(PI / 2), AZ, 3.8, Z, 0.07);
+    enFachada(new THREE.CircleGeometry(0.3, 16).rotateY(PI / 2), BL, 3.8, Z, 0.08);
+    enFachada(new THREE.BoxGeometry(0.02, 0.36, 0.08), AZ, 3.8, Z, 0.1);
+    enFachada(new THREE.BoxGeometry(0.02, 0.08, 0.24), AZ, 3.86, Z, 0.1);
+    enFachada(new THREE.BoxGeometry(0.06, 1.95, 2.2), OS, 0.975, Z);
+    arco(1.95, Z, 1.1, OS, 0.02);
+    // ventanas en arco de las calles laterales (dos niveles) y faroles
+    for (const s of [-1, 1]) {
+      const z = Z + s * 3.9;
+      for (const [y, h, w] of [[4.15, 0.75, 0.6], [7.05, 0.6, 0.5]]) {
+        enFachada(new THREE.BoxGeometry(0.06, h, w), OS, y, z);
+        arco(y + h / 2, z, w / 2, OS, 0.02);
+        enFachada(new THREE.BoxGeometry(0.14, 0.08, w + 0.2), AZ, y - h / 2 - 0.04, z, 0.06);
+      }
+      enFachada(new THREE.BoxGeometry(0.3, 0.42, 0.3), new THREE.Color('#2e2e2e'), 5.45, z - s * 0.9, 0.35);
+      enFachada(new THREE.SphereGeometry(0.11, 8, 6), new THREE.Color('#fff2c4'), 5.4, z - s * 0.9, 0.35);
+    }
+    solido({ x0: -71.6, x1: F + 0.5, z0: Z - 5.1, z1: Z + 5.1 });
+    mapa.edificios.push({ x0: -71.6, x1: F, z0: Z - 5, z1: Z + 5, color: '#f0c419' });
+
+    // atrio y reja: barda baja blanca con barandal blanco y portón azul con diseño de sol (cerrado, como en la foto)
     losa('pasto', -64.9, 1.5, -54.6, 16, 0.03, 4, '#6f9a48');
-    L.lisos.push(new THREE.BoxGeometry(0.25, 0.9, 5.4), new THREE.Color('#f1eee6'), M(-54.8, 0.45, 4.2));
-    L.lisos.push(new THREE.BoxGeometry(0.25, 0.9, 5.4), new THREE.Color('#f1eee6'), M(-54.8, 0.45, 13.3));
-    solido({ x0: -55, x1: -54.6, z0: 1.5, z1: 6.9 }); solido({ x0: -55, x1: -54.6, z0: 10.6, z1: 16 });
+    const RX = -54.85, G0 = Z - 1.85, G1 = Z + 1.85;
+    for (const [z0, z1] of [[1.5, G0 - 0.25], [G1 + 0.25, 16]]) {
+      const zc = (z0 + z1) / 2, lz = z1 - z0;
+      L.lisos.push(new THREE.BoxGeometry(0.32, 1.0, lz), BL, M(RX, 0.5, zc));
+      L.lisos.push(new THREE.BoxGeometry(0.06, 0.06, lz), BL, M(RX, 2.05, zc));
+      for (let z = z0 + 0.12; z < z1; z += 0.24) L.lisos.push(new THREE.BoxGeometry(0.035, 1.05, 0.035), BL, M(RX, 1.53, z));
+      for (const zz of [z0, z1]) L.lisos.push(new THREE.BoxGeometry(0.4, 2.2, 0.4), BL, M(RX, 1.1, zz));
+    }
+    for (const z of [G0 - 0.25, G1 + 0.25]) L.lisos.push(new THREE.BoxGeometry(0.5, 2.5, 0.5), BL, M(RX, 1.25, z));
+    L.lisos.push(new THREE.BoxGeometry(0.08, 1.15, G1 - G0), AZ, M(RX, 0.6, Z));
+    L.lisos.push(new THREE.BoxGeometry(0.06, 0.07, G1 - G0), AZ, M(RX, 2.2, Z));
+    L.lisos.push(new THREE.BoxGeometry(0.06, 2.2, 0.07), AZ, M(RX, 1.1, Z));
+    for (let z = G0 + 0.15; z < G1; z += 0.3) L.lisos.push(new THREE.BoxGeometry(0.035, 1.05, 0.035), AZ, M(RX, 1.7, z));
+    for (const cz of [Z - 0.92, Z + 0.92]) for (let i = 0; i <= 6; i++) {
+      const a = -PI / 2 + (i / 6) * PI; // rayos del sol desde la base de cada hoja
+      L.lisos.push(new THREE.BoxGeometry(0.04, 0.8, 0.04), AZ, M(RX - 0.03, 1.2 + Math.cos(a) * 0.4, cz + Math.sin(a) * 0.4, 0, a));
+    }
+    solido({ x0: RX - 0.25, x1: RX + 0.25, z0: 1.5, z1: 16 });
   }
   // Agencia Municipal: portal hacia la calle central (provisional), techos rojizos
   casa(-65, 28, 20, 14, 3.6, PI / 2, { muro: '#f4ecd8', techo: '#b5654a', tile: 2, tipoTecho: 'una', techoTeja: true, techoMapa: 'b5654a' });
