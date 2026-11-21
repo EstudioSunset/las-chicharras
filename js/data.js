@@ -151,10 +151,12 @@ export const LUGARES = [
     documentado: [
       { texto: 'Casa de muros de adobe aparente, con techo de lámina de una sola caída, oxidada, con tres láminas claras.', fuente: 'Google Street View · señalada por la comunidad (2026)' },
       { texto: 'Al frente tiene una puerta de madera y dos ventanas pequeñas de postigo. Junto a la puerta, un letrero azul dice «Prohibido tirar basura en este lugar. Gracias».', fuente: 'Google Street View' },
-      { texto: 'En esa foto, la calle central hacia el sur se ve de terracería, con cunetas a los lados.', fuente: 'Google Street View' },
+      { texto: 'En esa foto, la calle de enfrente (al sur del parque) todavía era de terracería. Hoy es de concreto: toca «Antes / Ahora» aquí para comparar.', fuente: 'Google Street View · confirmado por la comunidad (2026)' },
+      { texto: 'En la misma foto, la calle central hacia el sur se ve de terracería, con cunetas a los lados.', fuente: 'Google Street View' },
     ],
     recuerdos: [],
-    pendiente: '¿De quién era esta casa y desde cuándo está? ¿Sigue en pie? ¿Ya pavimentaron la calle?',
+    antesAhora: true,
+    pendiente: '¿De quién era esta casa y desde cuándo está? ¿Sigue en pie? ¿En qué año pavimentaron la calle?',
   },
   {
     id: 'escuela',

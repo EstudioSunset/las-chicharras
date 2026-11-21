@@ -605,6 +605,15 @@ export function construirPueblo(scene, renderer) {
   vehiculo('auto', '#b3262a', -27, -48.3, PI / 2, eras.ahora);
   vehiculo('auto', '#e9e9e6', -43.8, -35, 0, eras.ahora);
   vehiculo('auto', '#e1e3e4', -43.8, -26, PI, eras.ahora);
+  // ANTES (Street View, c. 2015): la calle frente a la casa de adobe era de terracería; hoy es de concreto
+  // (confirmado por la comunidad, 2026). Solo se cubre el tramo que se ve en la foto.
+  {
+    const x0 = -54, x1 = -22, z0 = 46.3, z1 = 53.6;
+    const g = new THREE.PlaneGeometry(x1 - x0, z1 - z0).rotateX(-PI / 2).translate((x0 + x1) / 2, 0.04, (z0 + z1) / 2);
+    const p = g.attributes.position, uv = g.attributes.uv;
+    for (let i = 0; i < p.count; i++) uv.setXY(i, p.getX(i) / 6, -p.getZ(i) / 6);
+    eras.antes.add(new THREE.Mesh(g, new THREE.MeshLambertMaterial({ map: T.tierra })));
+  }
   // ANTES (Street View): camionetas estacionadas sobre la tierra bajo los ficus
   vehiculo('pickup', '#1f2326', -44, -40.5, 0.75, eras.antes);
   vehiculo('pickup', '#3b1c20', -39.5, -42.5, 0.65, eras.antes);
